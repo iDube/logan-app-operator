@@ -53,7 +53,7 @@ type BootSpec struct {
 	// Readiness is a readiness check path for the app container.
 	Readiness *string `json:"readiness,omitempty"`
 	// Prometheus will scrape metrics from the service, default is `true`
-	Prometheus string `json:"prometheus"`
+	Prometheus string `json:"prometheus,omitempty"`
 	// Resources is the compute resource requirements for the app container
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
 	// NodeSelector is a selector which must be true for the pod to fit on a node.
@@ -70,6 +70,8 @@ type BootSpec struct {
 	// +patchMergeKey=name
 	// +patchStrategy=merge
 	Pvc []PersistentVolumeClaimMount `json:"pvc,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
+	// Priority will set the priorityClassName for the boot's workloads, default is ``
+	Priority string `json:"priority,omitempty"`
 }
 
 // BootStatus defines the observed state of Boot for specified types, as JavaBoot/PhpBoot/PythonBoot/NodeJSBoot

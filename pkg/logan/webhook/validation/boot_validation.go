@@ -22,6 +22,7 @@ import (
 	"github.com/logancloud/logan-app-operator/pkg/logan/webhook"
 	admssionv1beta1 "k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"
+	scheduling "k8s.io/api/scheduling/v1beta1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
@@ -116,10 +117,17 @@ func (vHandler *BootValidator) Validate(req types.Request) (string, bool, error)
 
 	// Check Boot's envs when creating or updating.
 	// Check Boot's pvc when creating or updating.
+	// Check Boot's priority when creating or updating.
 	// Record a revision when creating or updating if validation Boot valid.
 	if operation == admssionv1beta1.Create || operation == admssionv1beta1.Update {
 		msg, valid := vHandler.CheckEnvKeys(boot, operation)
 
+		if !valid {
+			logger.Info(msg)
+			return msg, false, nil
+		}
+
+		msg, valid = vHandler.checkPriority(boot, operation)
 		if !valid {
 			logger.Info(msg)
 			return msg, false, nil
@@ -459,6 +467,38 @@ func (vHandler *BootValidator) checkPvcOwner(boot *appv1.Boot, pvcMount appv1.Pe
 		}
 	}
 	return true, false, false, ""
+}
+
+func (vHandler *BootValidator) checkPriority(boot *v1.Boot, operation admssionv1beta1.Operation) (string, bool) {
+	if len(boot.Spec.Priority) != 0 {
+		c := vHandler.client
+		pc := &scheduling.PriorityClass{}
+		err := c.Get(context.TODO(), k8stypes.NamespacedName{
+			Name: boot.Spec.Priority,
+		}, pc)
+
+		if err != nil && errors.IsNotFound(err) {
+			return fmt.Sprintf("the PriorityClass %s  don't exist in  cluster.",
+				boot.Spec.Priority), false
+		}
+
+		if !util.PriorityClassPermittedInNamespace(boot.Spec.Priority, boot.Namespace) {
+			return fmt.Sprintf("namespace %s can not use  PriorityClass %s.",
+				boot.Namespace, boot.Spec.Priority), false
+		}
+
+		if pc.Annotations == nil {
+			return fmt.Sprintf("namespace %s can not use  PriorityClass %s.",
+				boot.Namespace, boot.Spec.Priority), false
+		}
+		_, found := pc.Annotations[keys.BootPriorityAnnotaionKeyPrefix+boot.Namespace]
+		if !found {
+			return fmt.Sprintf("namespace %s can not use  PriorityClass %s.",
+				boot.Namespace, boot.Spec.Priority), false
+		}
+	}
+
+	return "", true
 }
 
 // CheckEnvKeys check the boot's env keys.

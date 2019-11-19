@@ -966,5 +966,56 @@ var _ = Describe("Testing Webhook", func() {
 				})).Run()
 			})
 		})
+
+	})
+
+	Describe("testing validating webhook with priority", func() {
+		It("test validating webhook with priority is ok", func() {
+			pc := operatorFramework.SamplePriority(bootKey)
+			e2e := &operatorFramework.E2E{
+				Build: func() {
+					operatorFramework.CreatePriority(pc)
+					operatorFramework.CreateBoot(javaBoot)
+				},
+				Check: func() {
+					boot := operatorFramework.GetBoot(bootKey)
+					Expect(boot.Name).Should(Equal(bootKey.Name))
+					deploy := operatorFramework.GetDeployment(bootKey)
+					Expect(deploy.Spec.Template.Spec.PriorityClassName).Should(Equal(boot.Spec.Priority))
+				},
+				Update: func() {
+					boot := operatorFramework.GetBoot(bootKey)
+					boot.Spec.Priority = bootKey.Name
+					operatorFramework.UpdateBoot(boot)
+				},
+			}
+			e2e.Recheck = e2e.Check
+			e2e.Run()
+			operatorFramework.DeletePriority(pc)
+		})
+
+		It("test validating webhook with priority is error", func() {
+			e2e := &operatorFramework.E2E{
+				BuildAndCheck: func() {
+					javaBoot.Spec.Priority = "123"
+					err := operatorFramework.CreateBootWithError(javaBoot)
+					Expect(err).Should(HaveOccurred())
+
+					javaBoot.Spec.Priority = "system-cluster-critical"
+					err = operatorFramework.CreateBootWithError(javaBoot)
+					Expect(err).Should(HaveOccurred())
+
+					bootKey.Namespace = "123"
+					pc := operatorFramework.SamplePriority(bootKey)
+					operatorFramework.CreatePriority(pc)
+					javaBoot.Spec.Priority = pc.Name
+					err = operatorFramework.CreateBootWithError(javaBoot)
+					Expect(err).Should(HaveOccurred())
+					operatorFramework.DeletePriority(pc)
+				},
+			}
+			e2e.Run()
+		})
+
 	})
 })
