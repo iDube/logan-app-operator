@@ -61,6 +61,9 @@ const (
 	// BootRevisionRetryAnnotationKey is the annotation key for boot revision's fail retry times
 	BootRevisionRetryAnnotationKey = "app.logancloud.com/retry"
 
-	// BootSecretAnnotaionKeyPrefix is the annotation key prefix for flags whether permission is granted
+	// BootSecretAnnotaionKeyPrefix is the annotation key prefix for flags whether permission is granted for Secret
 	BootSecretAnnotaionKeyPrefix = "app.logancloud.com/secret-"
+
+	// BootPriorityAnnotaionKeyPrefix is the annotation key prefix for flags whether permission is granted for PriorityClass
+	BootPriorityAnnotaionKeyPrefix = "app.logancloud.com/priority-"
 )

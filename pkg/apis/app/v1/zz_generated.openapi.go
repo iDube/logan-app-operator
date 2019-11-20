@@ -11,16 +11,16 @@ import (
 
 func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenAPIDefinition {
 	return map[string]common.OpenAPIDefinition{
-		"./pkg/apis/app/v1.Boot":                       schema_pkg_apis_app_v1_Boot(ref),
-		"./pkg/apis/app/v1.BootRevision":               schema_pkg_apis_app_v1_BootRevision(ref),
-		"./pkg/apis/app/v1.BootSpec":                   schema_pkg_apis_app_v1_BootSpec(ref),
-		"./pkg/apis/app/v1.BootStatus":                 schema_pkg_apis_app_v1_BootStatus(ref),
-		"./pkg/apis/app/v1.JavaBoot":                   schema_pkg_apis_app_v1_JavaBoot(ref),
-		"./pkg/apis/app/v1.NodeJSBoot":                 schema_pkg_apis_app_v1_NodeJSBoot(ref),
-		"./pkg/apis/app/v1.PersistentVolumeClaimMount": schema_pkg_apis_app_v1_PersistentVolumeClaimMount(ref),
-		"./pkg/apis/app/v1.PhpBoot":                    schema_pkg_apis_app_v1_PhpBoot(ref),
-		"./pkg/apis/app/v1.PythonBoot":                 schema_pkg_apis_app_v1_PythonBoot(ref),
-		"./pkg/apis/app/v1.WebBoot":                    schema_pkg_apis_app_v1_WebBoot(ref),
+		"github.com/logancloud/logan-app-operator/pkg/apis/app/v1.Boot":                       schema_pkg_apis_app_v1_Boot(ref),
+		"github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootRevision":               schema_pkg_apis_app_v1_BootRevision(ref),
+		"github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootSpec":                   schema_pkg_apis_app_v1_BootSpec(ref),
+		"github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootStatus":                 schema_pkg_apis_app_v1_BootStatus(ref),
+		"github.com/logancloud/logan-app-operator/pkg/apis/app/v1.JavaBoot":                   schema_pkg_apis_app_v1_JavaBoot(ref),
+		"github.com/logancloud/logan-app-operator/pkg/apis/app/v1.NodeJSBoot":                 schema_pkg_apis_app_v1_NodeJSBoot(ref),
+		"github.com/logancloud/logan-app-operator/pkg/apis/app/v1.PersistentVolumeClaimMount": schema_pkg_apis_app_v1_PersistentVolumeClaimMount(ref),
+		"github.com/logancloud/logan-app-operator/pkg/apis/app/v1.PhpBoot":                    schema_pkg_apis_app_v1_PhpBoot(ref),
+		"github.com/logancloud/logan-app-operator/pkg/apis/app/v1.PythonBoot":                 schema_pkg_apis_app_v1_PythonBoot(ref),
+		"github.com/logancloud/logan-app-operator/pkg/apis/app/v1.WebBoot":                    schema_pkg_apis_app_v1_WebBoot(ref),
 	}
 }
 
@@ -52,13 +52,13 @@ func schema_pkg_apis_app_v1_Boot(ref common.ReferenceCallback) common.OpenAPIDef
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Description: "spec contains the desired behavior of the Boot",
-							Ref:         ref("./pkg/apis/app/v1.BootSpec"),
+							Ref:         ref("github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Description: "status contains the last observed state of the BootStatus",
-							Ref:         ref("./pkg/apis/app/v1.BootStatus"),
+							Ref:         ref("github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootStatus"),
 						},
 					},
 					"bootType": {
@@ -78,7 +78,7 @@ func schema_pkg_apis_app_v1_Boot(ref common.ReferenceCallback) common.OpenAPIDef
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/app/v1.BootSpec", "./pkg/apis/app/v1.BootStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootSpec", "github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -110,13 +110,13 @@ func schema_pkg_apis_app_v1_BootRevision(ref common.ReferenceCallback) common.Op
 					"spec": {
 						SchemaProps: spec.SchemaProps{
 							Description: "spec contains the desired behavior of the Boot",
-							Ref:         ref("./pkg/apis/app/v1.BootSpec"),
+							Ref:         ref("github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
 							Description: "status contains the last observed state of the BootStatus",
-							Ref:         ref("./pkg/apis/app/v1.BootStatus"),
+							Ref:         ref("github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootStatus"),
 						},
 					},
 					"bootType": {
@@ -136,7 +136,7 @@ func schema_pkg_apis_app_v1_BootRevision(ref common.ReferenceCallback) common.Op
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/app/v1.BootSpec", "./pkg/apis/app/v1.BootStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootSpec", "github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -203,6 +203,13 @@ func schema_pkg_apis_app_v1_BootSpec(ref common.ReferenceCallback) common.OpenAP
 					"health": {
 						SchemaProps: spec.SchemaProps{
 							Description: "Health is check path for the app container.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"readiness": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Readiness is a readiness check path for the app container.",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -275,18 +282,25 @@ func schema_pkg_apis_app_v1_BootSpec(ref common.ReferenceCallback) common.OpenAP
 							Items: &spec.SchemaOrArray{
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
-										Ref: ref("./pkg/apis/app/v1.PersistentVolumeClaimMount"),
+										Ref: ref("github.com/logancloud/logan-app-operator/pkg/apis/app/v1.PersistentVolumeClaimMount"),
 									},
 								},
 							},
 						},
 					},
+					"priority": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Priority will set the priorityClassName for the boot's workloads, default is ``",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
-				Required: []string{"image", "version", "prometheus"},
+				Required: []string{"image", "version"},
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/app/v1.PersistentVolumeClaimMount", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements"},
+			"github.com/logancloud/logan-app-operator/pkg/apis/app/v1.PersistentVolumeClaimMount", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements"},
 	}
 }
 
@@ -348,19 +362,19 @@ func schema_pkg_apis_app_v1_JavaBoot(ref common.ReferenceCallback) common.OpenAP
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("./pkg/apis/app/v1.BootSpec"),
+							Ref: ref("github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("./pkg/apis/app/v1.BootStatus"),
+							Ref: ref("github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/app/v1.BootSpec", "./pkg/apis/app/v1.BootStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootSpec", "github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -391,19 +405,19 @@ func schema_pkg_apis_app_v1_NodeJSBoot(ref common.ReferenceCallback) common.Open
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("./pkg/apis/app/v1.BootSpec"),
+							Ref: ref("github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("./pkg/apis/app/v1.BootStatus"),
+							Ref: ref("github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/app/v1.BootSpec", "./pkg/apis/app/v1.BootStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootSpec", "github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -469,19 +483,19 @@ func schema_pkg_apis_app_v1_PhpBoot(ref common.ReferenceCallback) common.OpenAPI
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("./pkg/apis/app/v1.BootSpec"),
+							Ref: ref("github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("./pkg/apis/app/v1.BootStatus"),
+							Ref: ref("github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/app/v1.BootSpec", "./pkg/apis/app/v1.BootStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootSpec", "github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -512,19 +526,19 @@ func schema_pkg_apis_app_v1_PythonBoot(ref common.ReferenceCallback) common.Open
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("./pkg/apis/app/v1.BootSpec"),
+							Ref: ref("github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("./pkg/apis/app/v1.BootStatus"),
+							Ref: ref("github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/app/v1.BootSpec", "./pkg/apis/app/v1.BootStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootSpec", "github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }
 
@@ -555,18 +569,18 @@ func schema_pkg_apis_app_v1_WebBoot(ref common.ReferenceCallback) common.OpenAPI
 					},
 					"spec": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("./pkg/apis/app/v1.BootSpec"),
+							Ref: ref("github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootSpec"),
 						},
 					},
 					"status": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("./pkg/apis/app/v1.BootStatus"),
+							Ref: ref("github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootStatus"),
 						},
 					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"./pkg/apis/app/v1.BootSpec", "./pkg/apis/app/v1.BootStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
+			"github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootSpec", "github.com/logancloud/logan-app-operator/pkg/apis/app/v1.BootStatus", "k8s.io/apimachinery/pkg/apis/meta/v1.ObjectMeta"},
 	}
 }

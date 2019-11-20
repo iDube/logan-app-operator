@@ -350,6 +350,13 @@ func (handler *BootHandler) reconcileUpdateDeploy(deploy *appsv1.Deployment) (re
 		}
 	}
 
+	// 12 Check Priority
+	if deploy.Spec.Template.Spec.PriorityClassName != boot.Spec.Priority {
+		logger.Info(reason, "type", "Priority", "deploy", deploy.Name,
+			"old", deploy.Spec.Template.Spec.PriorityClassName, "new", boot.Spec.Priority)
+		rebootUpdated = true
+	}
+
 	if rebootUpdated {
 		updateDeploy := handler.NewDeployment()
 		deploy.Spec = updateDeploy.Spec

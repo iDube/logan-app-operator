@@ -92,6 +92,10 @@ spec:
               type: integer
               minimum: 1
               maximum: 65535
+            priority:
+              description: Priority will set the priorityClassName for the boot's
+                workloads, default is ``
+              type: string
             prometheus:
               description: Prometheus will scrape metrics from the service, default
                 is `true`
