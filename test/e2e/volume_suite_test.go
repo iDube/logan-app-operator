@@ -18,9 +18,9 @@ var _ = Describe("Testing Volume", func() {
 	var pvc *corev1.PersistentVolumeClaim
 
 	BeforeEach(func() {
-		// Gen new namespace
+		// Gen new boot
 		bootKey = operatorFramework.GenResource()
-		operatorFramework.CreateNamespace(bootKey.Namespace)
+		bootKey.Namespace = namespace
 
 		phpBoot = operatorFramework.SamplePhpBoot(bootKey)
 		if phpBoot.ObjectMeta.Annotations == nil {
@@ -33,8 +33,8 @@ var _ = Describe("Testing Volume", func() {
 	})
 
 	AfterEach(func() {
-		// Clean namespace
-		operatorFramework.DeleteNamespace(bootKey.Namespace)
+		// Clean boot
+		operatorFramework.DeleteBootIgnoreError(phpBoot)
 	})
 
 	Describe("Testing PVC when operator config update [Serial]", func() {

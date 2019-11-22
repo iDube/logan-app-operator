@@ -13,7 +13,7 @@ import (
 
 // SampleBoot will return a sample JavaBoot object
 func SampleBoot(bootKey types.NamespacedName) *bootv1.JavaBoot {
-	replicas := int32(1)
+	replicas := int32(0)
 	javaboot := &bootv1.JavaBoot{
 		ObjectMeta: metav1.ObjectMeta{Name: bootKey.Name, Namespace: bootKey.Namespace},
 		Spec: bootv1.BootSpec{
@@ -113,6 +113,11 @@ func DeleteBoot(obj runtime.Object) {
 	gomega.Eventually(func() error {
 		return framework.Mgr.GetClient().Delete(context.TODO(), obj)
 	}, defaultTimeout).Should(gomega.Succeed())
+}
+
+// DeleteBootIgnoreError will delete Boot from kubernetes ignore error
+func DeleteBootIgnoreError(obj runtime.Object) {
+	framework.Mgr.GetClient().Delete(context.TODO(), obj)
 }
 
 // GetBoot will get JavaBoot with boot key from kubernetes, return JavaBoot

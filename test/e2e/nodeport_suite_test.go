@@ -14,17 +14,15 @@ var _ = Describe("Testing nodePort Boot", func() {
 	var javaBoot *bootv1.JavaBoot
 
 	BeforeEach(func() {
-		// Gen new namespace, run in dev ENV
+		// Gen new Boot, run in dev ENV
 		bootKey = operatorFramework.GenResource()
-		bootKey.Namespace = bootKey.Namespace + "-dev"
-		operatorFramework.CreateNamespace(bootKey.Namespace)
-
+		bootKey.Namespace = namespace + "-dev"
 		javaBoot = operatorFramework.SampleBoot(bootKey)
 	})
 
 	AfterEach(func() {
-		// Clean namespace
-		operatorFramework.DeleteNamespace(bootKey.Namespace)
+		// Clean Boot
+		operatorFramework.DeleteBootIgnoreError(javaBoot)
 	})
 
 	Describe("testing update nodePort boot", func() {

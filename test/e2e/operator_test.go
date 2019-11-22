@@ -26,7 +26,23 @@ func TestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 
+var namespace string
+
 func TestSuite(t *testing.T) {
 	RegisterFailHandler(Fail)
+	beforeTest()
 	RunSpecs(t, "E2E Test Operator Suite")
+	afterTest()
+}
+
+func beforeTest() {
+	newKey := operatorFramework.GenResource()
+	namespace = newKey.Namespace
+	operatorFramework.CreateNamespace(namespace)
+	operatorFramework.CreateNamespace(namespace + "-dev")
+}
+
+func afterTest() {
+	operatorFramework.DeleteNamespace(namespace)
+	operatorFramework.DeleteNamespace(namespace + "-dev")
 }

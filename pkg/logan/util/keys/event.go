@@ -11,7 +11,7 @@ const (
 	UpdatedDeployment = "UpdatedDeployment"
 	// FailedUpdateDeployment is the failed event reason for updated deployment
 	FailedUpdateDeployment = "FailedUpdateDeployment"
-	// FailedUpdateDeployment is the failed event reason for got deployment
+	// FailedGetDeployment is the failed event reason for got deployment
 	FailedGetDeployment = "FailedGetDeployment"
 
 	// CreatedService is the event reason for created service
