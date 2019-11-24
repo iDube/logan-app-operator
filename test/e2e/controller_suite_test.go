@@ -15,21 +15,21 @@ import (
 	"strings"
 )
 
-var _ = Describe("Testing Boot", func() {
+var _ = Describe("Testing Boot controller ", func() {
 	var bootKey types.NamespacedName
 	var javaBoot *bootv1.JavaBoot
 
 	BeforeEach(func() {
-		// Gen new namespace
+		// Gen new boot
 		bootKey = operatorFramework.GenResource()
-		operatorFramework.CreateNamespace(bootKey.Namespace)
+		bootKey.Namespace = namespace
 
 		javaBoot = operatorFramework.SampleBoot(bootKey)
 	})
 
 	AfterEach(func() {
-		// Clean namespace
-		operatorFramework.DeleteNamespace(bootKey.Namespace)
+		// Clean boot
+		operatorFramework.DeleteBootIgnoreError(javaBoot)
 	})
 
 	Describe("testing create boot service and deployment[CONTROLLER-1]", func() {
@@ -1153,19 +1153,6 @@ var _ = Describe("Testing Boot", func() {
 	})
 
 	Describe("test delete boot deployment and service[CONTROLLER-2]", func() {
-		It("testing delete boot", func() {
-			e2e := &operatorFramework.E2E{
-				Build: func() {
-					operatorFramework.CreateBoot(javaBoot)
-					operatorFramework.DeleteBoot(javaBoot)
-				},
-				Check: func() {
-					_, err := operatorFramework.GetBootWithError(bootKey)
-					Expect(err).Should(HaveOccurred())
-				},
-			}
-			e2e.Run()
-		})
 
 		It("testing delete service created by boot", func() {
 			e2e := &operatorFramework.E2E{

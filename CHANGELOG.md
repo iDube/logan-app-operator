@@ -1,5 +1,15 @@
 # logan-app-operator Release Notes
 
+
+## Version 0.7.0 - 11/23/2019
+
+* Boot supports pod priority
+* Boot supports env read value from secret
+* Boot supports readiness's path is allowed to be different from liveness's path
+* Support run e2e parallel on travis
+* Support run e2e on local host
+* Optimize the e2e
+
 ## Version 0.6.0 - 10/31/2019
 
 * Boot supports history revision

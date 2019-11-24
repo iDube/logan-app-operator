@@ -41,6 +41,7 @@ func CreatePriority(obj runtime.Object) {
 	WaitDefaultUpdate()
 }
 
+// DeletePriority will delete specific Priority object
 func DeletePriority(obj runtime.Object) {
 	err := framework.Mgr.GetClient().Delete(context.TODO(), obj)
 	if err != nil {

@@ -32,16 +32,15 @@ var _ = Describe("Test initContainer", func() {
 	}
 
 	BeforeEach(func() {
-		// Gen new namespace
+		// Gen new boot
 		bootKey = operatorFramework.GenResource()
-		operatorFramework.CreateNamespace(bootKey.Namespace)
-
+		bootKey.Namespace = namespace
 		phpBoot = operatorFramework.SamplePhpBoot(bootKey)
 	})
 
 	AfterEach(func() {
-		// Clean namespace
-		operatorFramework.DeleteNamespace(bootKey.Namespace)
+		// Clean boot
+		operatorFramework.DeleteBootIgnoreError(phpBoot)
 	})
 
 	Describe("Testing InitContainer [Serial]", func() {

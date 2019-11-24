@@ -20,9 +20,9 @@ go_import_path: github.com/logancloud/logan-app-operator
 
 cache:
   directories:
-    - $GOPATH/pkg
+    # - $GOPATH/pkg
     - $GOPATH/bin
-    - $HOME/.cache/go-build
+    #- $HOME/.cache/go-build
 
 before_install:
   - export TRAVIS_SD_START_TIME=$(date -u +%s)

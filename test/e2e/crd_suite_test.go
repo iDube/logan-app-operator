@@ -15,16 +15,17 @@ import (
 var _ = Describe("Testing CRD [CRD]", func() {
 	var bootKey types.NamespacedName
 	var javaBoot *bootv1.JavaBoot
+
 	BeforeEach(func() {
-		// Gen new namespace
+		// Gen new boot
 		bootKey = operatorFramework.GenResource()
-		operatorFramework.CreateNamespace(bootKey.Namespace)
+		bootKey.Namespace = namespace
 		javaBoot = operatorFramework.SampleBoot(bootKey)
 	})
 
 	AfterEach(func() {
-		// Clean namespace
-		operatorFramework.DeleteNamespace(bootKey.Namespace)
+		// Clean boot
+		operatorFramework.DeleteBootIgnoreError(javaBoot)
 	})
 
 	Describe("testing create boot name", func() {

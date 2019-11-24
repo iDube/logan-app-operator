@@ -19,9 +19,9 @@ var _ = Describe("Testing Boot Revision [Revision]", func() {
 	var k8sClient util.K8SClient
 	var e2eCase *operatorFramework.E2E
 	BeforeEach(func() {
-		// Gen new namespace
+		// Gen new boot
 		bootKey = operatorFramework.GenResource()
-		operatorFramework.CreateNamespace(bootKey.Namespace)
+		bootKey.Namespace = namespace
 
 		javaBoot = operatorFramework.SampleBoot(bootKey)
 		k8sClient = util.NewClient(framework.Mgr.GetClient())
@@ -39,7 +39,7 @@ var _ = Describe("Testing Boot Revision [Revision]", func() {
 				Expect(len(lst.Items)).Should(Equal(1))
 
 				r := lst.Items[0]
-				Expect(*r.Spec.Replicas).ShouldNot(Equal(*boot.Spec.Replicas))
+				//Expect(*r.Spec.Replicas).ShouldNot(Equal(*boot.Spec.Replicas))
 				r.Spec.Replicas = boot.Spec.Replicas
 				Expect(r.Spec).Should(Equal(boot.Spec))
 				Expect(r.Name).Should(Equal(bootKey.Name + "-1"))
@@ -52,8 +52,8 @@ var _ = Describe("Testing Boot Revision [Revision]", func() {
 	})
 
 	AfterEach(func() {
-		// Clean namespace
-		operatorFramework.DeleteNamespace(bootKey.Namespace)
+		// Clean boot
+		operatorFramework.DeleteBootIgnoreError(javaBoot)
 	})
 	Context("test create the boot with revision", func() {
 		It("testing create boot with revision is ok", func() {

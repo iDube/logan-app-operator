@@ -21,15 +21,15 @@ var _ = Describe("Testing Webhook", func() {
 	var javaBoot *bootv1.JavaBoot
 
 	BeforeEach(func() {
-		// Gen new namespace
+		// Gen new boot
 		bootKey = operatorFramework.GenResource()
-		operatorFramework.CreateNamespace(bootKey.Namespace)
+		bootKey.Namespace = namespace
 		javaBoot = operatorFramework.SampleBoot(bootKey)
 	})
 
 	AfterEach(func() {
-		// Clean namespace
-		operatorFramework.DeleteNamespace(bootKey.Namespace)
+		// Clean boot
+		operatorFramework.DeleteBootIgnoreError(javaBoot)
 	})
 
 	Context("test create the same boot name", func() {
