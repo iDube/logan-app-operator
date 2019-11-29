@@ -1,0 +1,103 @@
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: logan-app-webhook-validation-dev
+webhooks:
+  - clientConfig:
+      caBundle: ${CA_BUNDLE}
+      service:
+        name: logan-app-webhook-dev
+        namespace: logan
+        path: /boot-configmaps
+    failurePolicy: Ignore
+    name: config.validation.app.logancloud.com
+    namespaceSelector:
+      matchExpressions:
+        - key: control-plane
+          operator: DoesNotExist
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+          - DELETE
+        resources:
+          - configmaps
+  - clientConfig:
+      caBundle: ${CA_BUNDLE}
+      service:
+        name: logan-app-webhook-dev
+        namespace: logan
+        path: /boot-validator
+    failurePolicy: Ignore
+    name: validation.app.logancloud.com
+    namespaceSelector:
+      matchExpressions:
+        - key: control-plane
+          operator: DoesNotExist
+    rules:
+      - apiGroups:
+          - app.logancloud.com
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - javaboots
+          - phpboots
+          - pythonboots
+          - nodejsboots
+          - webboots
+
+---
+apiVersion: admissionregistration.k8s.io/v1beta1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: logan-app-webhook-mutation-dev
+webhooks:
+  - clientConfig:
+      caBundle: ${CA_BUNDLE}
+      service:
+        name: logan-app-webhook-dev
+        namespace: logan
+        path: /boot-mutator
+    failurePolicy: Ignore
+    name: mutation.app.logancloud.com
+    namespaceSelector:
+      matchExpressions:
+        - key: control-plane
+          operator: DoesNotExist
+    rules:
+      - apiGroups:
+          - app.logancloud.com
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - javaboots
+          - phpboots
+          - pythonboots
+          - nodejsboots
+          - webboots
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: logan-app-webhook-dev
+  namespace: logan
+spec:
+  ports:
+    - port: 443
+      protocol: TCP
+      targetPort: 8443
+  selector:
+    name: logan-app-operator-dev
+  sessionAffinity: None
+  type: ClusterIP

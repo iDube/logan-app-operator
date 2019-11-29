@@ -14,8 +14,8 @@ export KUBERNETES_VERSION=v1.12.0
 if [ -f $GOPATH/bin/operator-sdk ];then
     echo "operator-sdk in cached install"
 else
-    wget https://github.com/operator-framework/operator-sdk/releases/download/v0.10.1/operator-sdk-v0.10.1-x86_64-linux-gnu
-    mv operator-sdk-v0.10.1-x86_64-linux-gnu $GOPATH/bin/operator-sdk
+    wget https://github.com/operator-framework/operator-sdk/releases/download/v0.12.0/operator-sdk-v0.12.0-x86_64-linux-gnu
+    mv operator-sdk-v0.12.0-x86_64-linux-gnu $GOPATH/bin/operator-sdk
     chmod +x $GOPATH/bin/operator-sdk
 fi
 

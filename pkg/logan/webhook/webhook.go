@@ -2,9 +2,7 @@ package webhook
 
 import (
 	appv1 "github.com/logancloud/logan-app-operator/pkg/apis/app/v1"
-	admissionv1beta1 "k8s.io/api/admission/v1beta1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/admission/types"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 const (
@@ -21,7 +19,7 @@ const (
 )
 
 // DecodeBoot decode the Boot object from request.
-func DecodeBoot(req types.Request, decoder types.Decoder) (*appv1.Boot, error) {
+func DecodeBoot(req admission.Request, decoder *admission.Decoder) (*appv1.Boot, error) {
 	bootType := req.AdmissionRequest.Kind.Kind
 
 	var boot *appv1.Boot
@@ -66,7 +64,7 @@ func DecodeBoot(req types.Request, decoder types.Decoder) (*appv1.Boot, error) {
 }
 
 // DecodeJavaBoot decode the JavaBoot object from request.
-func DecodeJavaBoot(req types.Request, decoder types.Decoder) (*appv1.JavaBoot, error) {
+func DecodeJavaBoot(req admission.Request, decoder *admission.Decoder) (*appv1.JavaBoot, error) {
 	bootType := req.AdmissionRequest.Kind.Kind
 
 	var boot *appv1.JavaBoot
@@ -83,7 +81,7 @@ func DecodeJavaBoot(req types.Request, decoder types.Decoder) (*appv1.JavaBoot, 
 }
 
 // DecodePhpBoot decode the PhpBoot object from request.
-func DecodePhpBoot(req types.Request, decoder types.Decoder) (*appv1.PhpBoot, error) {
+func DecodePhpBoot(req admission.Request, decoder *admission.Decoder) (*appv1.PhpBoot, error) {
 	bootType := req.AdmissionRequest.Kind.Kind
 
 	var boot *appv1.PhpBoot
@@ -100,7 +98,7 @@ func DecodePhpBoot(req types.Request, decoder types.Decoder) (*appv1.PhpBoot, er
 }
 
 // DecodePythonBoot decode the PythonBoot object from request.
-func DecodePythonBoot(req types.Request, decoder types.Decoder) (*appv1.PythonBoot, error) {
+func DecodePythonBoot(req admission.Request, decoder *admission.Decoder) (*appv1.PythonBoot, error) {
 	bootType := req.AdmissionRequest.Kind.Kind
 
 	var boot *appv1.PythonBoot
@@ -117,7 +115,7 @@ func DecodePythonBoot(req types.Request, decoder types.Decoder) (*appv1.PythonBo
 }
 
 // DecodeNodeJSBoot decode the NodeJSBoot object from request.
-func DecodeNodeJSBoot(req types.Request, decoder types.Decoder) (*appv1.NodeJSBoot, error) {
+func DecodeNodeJSBoot(req admission.Request, decoder *admission.Decoder) (*appv1.NodeJSBoot, error) {
 	bootType := req.AdmissionRequest.Kind.Kind
 
 	var boot *appv1.NodeJSBoot
@@ -134,7 +132,7 @@ func DecodeNodeJSBoot(req types.Request, decoder types.Decoder) (*appv1.NodeJSBo
 }
 
 // DecodeWebBoot decode the WebBoot object from request.
-func DecodeWebBoot(req types.Request, decoder types.Decoder) (*appv1.WebBoot, error) {
+func DecodeWebBoot(req admission.Request, decoder *admission.Decoder) (*appv1.WebBoot, error) {
 	bootType := req.AdmissionRequest.Kind.Kind
 
 	var boot *appv1.WebBoot
@@ -148,20 +146,4 @@ func DecodeWebBoot(req types.Request, decoder types.Decoder) (*appv1.WebBoot, er
 	}
 
 	return boot, nil
-}
-
-// ValidationResponse will response admission result
-func ValidationResponse(allowed bool, code int32, reason string) types.Response {
-	resp := types.Response{
-		Response: &admissionv1beta1.AdmissionResponse{
-			Allowed: allowed,
-		},
-	}
-	resp.Response.Result = &metav1.Status{
-		Code: code,
-	}
-	if len(reason) > 0 {
-		resp.Response.Result.Message = reason
-	}
-	return resp
 }

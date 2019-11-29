@@ -27,6 +27,36 @@ runauto:
 install:
 	kubectl apply -f deploy
 
+# Install webhook into a cluster
+initwebhook: initwebhook-test initwebhook-dev initwebhook-auto
+
+initwebhook-test:
+	scripts/webhook-create-signed-cert.sh --service logan-app-webhook --namespace logan --secret logan-app-operator-webhook
+	cat deploy/webhook.yaml | scripts/webhook-patch-ca-bundle.sh | kubectl create -f -
+
+initwebhook-dev:
+	scripts/webhook-create-signed-cert.sh --service logan-app-webhook-dev --namespace logan --secret logan-app-operator-webhook-dev
+	cat deploy/webhook-dev.yaml | scripts/webhook-patch-ca-bundle.sh | kubectl create -f -
+
+initwebhook-auto:
+	scripts/webhook-create-signed-cert.sh --service logan-app-webhook-auto --namespace logan --secret logan-app-operator-webhook-auto
+	cat deploy/webhook-auto.yaml | scripts/webhook-patch-ca-bundle.sh | kubectl create -f -
+
+# Re Install webhook into a cluster
+rewebhook:
+	oc delete -f deploy/webhook.yaml --ignore-not-found=true
+	oc delete secret logan-app-operator-webhook --ignore-not-found=true
+	scripts/webhook-create-signed-cert.sh --service logan-app-webhook --namespace logan --secret logan-app-operator-webhook
+	cat deploy/webhook.yaml | scripts/webhook-patch-ca-bundle.sh | kubectl create -f -
+	oc delete -f deploy/webhook-dev.yaml --ignore-not-found=true
+	oc delete secret logan-app-operator-webhook-dev --ignore-not-found=true
+	scripts/webhook-create-signed-cert.sh --service logan-app-webhook-dev --namespace logan --secret logan-app-operator-webhook-dev
+	cat deploy/webhook-dev.yaml | scripts/webhook-patch-ca-bundle.sh | kubectl create -f -
+	oc delete -f deploy/webhook-auto.yaml --ignore-not-found=true
+	oc delete secret logan-app-operator-webhook-auto --ignore-not-found=true
+	scripts/webhook-create-signed-cert.sh --service logan-app-webhook-auto --namespace logan --secret logan-app-operator-webhook-auto
+	cat deploy/webhook-auto.yaml | scripts/webhook-patch-ca-bundle.sh | kubectl create -f -
+
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy:
 	kubectl apply -f deploy/crds

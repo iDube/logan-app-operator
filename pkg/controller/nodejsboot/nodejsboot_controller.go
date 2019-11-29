@@ -38,14 +38,15 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	return &ReconcileNodeJSBoot{
 		client:   util.NewClient(mgr.GetClient()),
 		scheme:   mgr.GetScheme(),
-		recorder: mgr.GetRecorder("nodejsboot-controller"),
+		recorder: mgr.GetEventRecorderFor("nodejsboot-controller"),
 	}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Create a new controller
-	c, err := controller.New("nodejsboot-controller", mgr, controller.Options{Reconciler: r, MaxConcurrentReconciles: logan.MaxConcurrentReconciles})
+	c, err := controller.New("nodejsboot-controller", mgr,
+		controller.Options{Reconciler: r, MaxConcurrentReconciles: logan.MaxConcurrentReconciles})
 	if err != nil {
 		return err
 	}
@@ -113,7 +114,9 @@ func (r *ReconcileNodeJSBoot) Reconcile(request reconcile.Request) (reconcile.Re
 	nodejsBoot := &appv1.NodeJSBoot{}
 	err := r.client.Get(context.TODO(), request.NamespacedName, nodejsBoot)
 	if err != nil {
-		loganMetrics.UpdateMainStageErrors(bootType, loganMetrics.RECONCILE_GET_BOOT_STAGE, request.Name)
+		loganMetrics.UpdateMainStageErrors(bootType,
+			loganMetrics.RECONCILE_GET_BOOT_STAGE,
+			request.Name)
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
@@ -137,7 +140,9 @@ func (r *ReconcileNodeJSBoot) Reconcile(request reconcile.Request) (reconcile.Re
 		if err != nil {
 			msg := "Failed to update Boot with Defaulters"
 			logger.Info(msg, "boot", nodejsBoot)
-			loganMetrics.UpdateMainStageErrors(bootType, loganMetrics.RECONCILE_UPDATE_BOOT_DEFAULTERS_STAGE, nodejsBoot.Name)
+			loganMetrics.UpdateMainStageErrors(bootType,
+				loganMetrics.RECONCILE_UPDATE_BOOT_DEFAULTERS_STAGE,
+				nodejsBoot.Name)
 			bootHandler.RecordEvent(keys.FailedUpdateBootDefaulters, msg, err)
 			return reconcile.Result{Requeue: true}, nil
 		}
@@ -167,7 +172,10 @@ func (r *ReconcileNodeJSBoot) Reconcile(request reconcile.Request) (reconcile.Re
 			// Other place will modify the status? So it will sometimes occur.
 			msg := "Failed to update Boot Meta"
 			logger.Info(msg, "err", err.Error())
-			loganMetrics.UpdateReconcileErrors(bootType, loganMetrics.RECONCILE_UPDATE_BOOT_META_STAGE, loganMetrics.RECONCILE_UPDATE_BOOT_META_SUBSTAGE, nodejsBoot.Name)
+			loganMetrics.UpdateReconcileErrors(bootType,
+				loganMetrics.RECONCILE_UPDATE_BOOT_META_STAGE,
+				loganMetrics.RECONCILE_UPDATE_BOOT_META_SUBSTAGE,
+				nodejsBoot.Name)
 
 			bootHandler.RecordEvent(keys.FailedUpdateBootMeta, msg, err)
 			return reconcile.Result{Requeue: true}, nil

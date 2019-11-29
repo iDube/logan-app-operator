@@ -10,7 +10,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"reflect"
@@ -42,7 +41,10 @@ func (handler *BootHandler) ReconcileCreate() (reconcile.Result, bool, error) {
 			if err != nil {
 				msg := fmt.Sprintf("Failed to create Deployment: %s", depName)
 				logger.Error(err, msg)
-				loganMetrics.UpdateReconcileErrors(boot.Kind, loganMetrics.RECONCILE_CREATE_STAGE, loganMetrics.RECONCILE_CREATE_DEPLOYMENT_SUBSTAGE, boot.Name)
+				loganMetrics.UpdateReconcileErrors(boot.Kind,
+					loganMetrics.RECONCILE_CREATE_STAGE,
+					loganMetrics.RECONCILE_CREATE_DEPLOYMENT_SUBSTAGE,
+					boot.Name)
 				handler.RecordEvent(keys.FailedCreateDeployment, msg, err)
 				return reconcile.Result{}, true, err
 			}
@@ -53,7 +55,10 @@ func (handler *BootHandler) ReconcileCreate() (reconcile.Result, bool, error) {
 		} else {
 			msg := fmt.Sprintf("Failed to get Deployment: %s", depName)
 			logger.Error(err, msg)
-			loganMetrics.UpdateReconcileErrors(boot.Kind, loganMetrics.RECONCILE_CREATE_STAGE, loganMetrics.RECONCILE_GET_DEPLOYMENT_SUBSTAGE, boot.Name)
+			loganMetrics.UpdateReconcileErrors(boot.Kind,
+				loganMetrics.RECONCILE_CREATE_STAGE,
+				loganMetrics.RECONCILE_GET_DEPLOYMENT_SUBSTAGE,
+				boot.Name)
 			handler.RecordEvent(keys.FailedGetDeployment, msg, err)
 			return reconcile.Result{}, true, err
 		}
@@ -75,7 +80,10 @@ func (handler *BootHandler) ReconcileCreate() (reconcile.Result, bool, error) {
 					//Note: Maybe when it called, the service is not created yet.
 					msg := fmt.Sprintf("Failed to create Service: %s", svc.Name)
 					logger.Error(err, msg)
-					loganMetrics.UpdateReconcileErrors(boot.Kind, loganMetrics.RECONCILE_CREATE_STAGE, loganMetrics.RECONCILE_CREATE_SERVICE_SUBSTAGE, boot.Name)
+					loganMetrics.UpdateReconcileErrors(boot.Kind,
+						loganMetrics.RECONCILE_CREATE_STAGE,
+						loganMetrics.RECONCILE_CREATE_SERVICE_SUBSTAGE,
+						boot.Name)
 					handler.RecordEvent(keys.FailedCreateService, msg, err)
 					return reconcile.Result{}, true, nil
 				}
@@ -85,7 +93,10 @@ func (handler *BootHandler) ReconcileCreate() (reconcile.Result, bool, error) {
 		} else {
 			msg := fmt.Sprintf("Failed to get Service: %s", appSvcName)
 			logger.Error(err, msg)
-			loganMetrics.UpdateReconcileErrors(boot.Kind, loganMetrics.RECONCILE_CREATE_STAGE, loganMetrics.RECONCILE_GET_SERVICE_SUBSTAGE, boot.Name)
+			loganMetrics.UpdateReconcileErrors(boot.Kind,
+				loganMetrics.RECONCILE_CREATE_STAGE,
+				loganMetrics.RECONCILE_GET_SERVICE_SUBSTAGE,
+				boot.Name)
 			handler.RecordEvent(keys.FailedGetService, msg, err)
 			return reconcile.Result{}, true, err
 		}
@@ -110,7 +121,10 @@ func (handler *BootHandler) ReconcileUpdate() (reconcile.Result, bool, error) {
 	err := c.Get(context.TODO(), types.NamespacedName{Name: depName, Namespace: boot.Namespace}, depFound)
 	if err != nil {
 		logger.Error(err, "Failed to get Deployment")
-		loganMetrics.UpdateReconcileErrors(boot.Kind, loganMetrics.RECONCILE_UPDATE_STAGE, loganMetrics.RECONCILE_GET_DEPLOYMENT_SUBSTAGE, boot.Name)
+		loganMetrics.UpdateReconcileErrors(boot.Kind,
+			loganMetrics.RECONCILE_UPDATE_STAGE,
+			loganMetrics.RECONCILE_GET_DEPLOYMENT_SUBSTAGE,
+			boot.Name)
 		return reconcile.Result{Requeue: true}, true, err
 	}
 	result, requeue, err := handler.reconcileUpdateDeploy(depFound)
@@ -123,7 +137,10 @@ func (handler *BootHandler) ReconcileUpdate() (reconcile.Result, bool, error) {
 	appSvcName := boot.Name
 	err = c.Get(context.TODO(), types.NamespacedName{Name: appSvcName, Namespace: boot.Namespace}, appSvcFound)
 	if err != nil {
-		loganMetrics.UpdateReconcileErrors(boot.Kind, loganMetrics.RECONCILE_UPDATE_STAGE, loganMetrics.RECONCILE_GET_SERVICE_SUBSTAGE, boot.Name)
+		loganMetrics.UpdateReconcileErrors(boot.Kind,
+			loganMetrics.RECONCILE_UPDATE_STAGE,
+			loganMetrics.RECONCILE_GET_SERVICE_SUBSTAGE,
+			boot.Name)
 		if errors.IsNotFound(err) {
 			logger.Info("Service resource not found. Ignoring since object is not created successfully yet", "error", err)
 			return reconcile.Result{Requeue: true}, true, nil
@@ -193,7 +210,10 @@ func (handler *BootHandler) reconcileUpdateDeploy(deploy *appsv1.Deployment) (re
 
 	// 5. Check port: check fist container(boot container)
 	deployPorts := deploy.Spec.Template.Spec.Containers[0].Ports
-	bootPorts := []corev1.ContainerPort{{Name: HttpPortName, ContainerPort: boot.Spec.Port, Protocol: corev1.ProtocolTCP}}
+	bootPorts := []corev1.ContainerPort{{
+		Name:          HttpPortName,
+		ContainerPort: boot.Spec.Port,
+		Protocol:      corev1.ProtocolTCP}}
 	if !reflect.DeepEqual(deployPorts, bootPorts) {
 		logger.Info(reason, "type", "port", "deploy", deploy.Name,
 			"old", deployPorts, "new", bootPorts)
@@ -368,7 +388,10 @@ func (handler *BootHandler) reconcileUpdateDeploy(deploy *appsv1.Deployment) (re
 		if err != nil {
 			msg := fmt.Sprintf("Failed to update Deployment: %s", deploy.GetName())
 			logger.Info(msg, "err", err.Error())
-			loganMetrics.UpdateReconcileErrors(boot.Kind, loganMetrics.RECONCILE_UPDATE_STAGE, loganMetrics.RECONCILE_UPDATE_DEPLOYMENT_SUBSTAGE, boot.Name)
+			loganMetrics.UpdateReconcileErrors(boot.Kind,
+				loganMetrics.RECONCILE_UPDATE_STAGE,
+				loganMetrics.RECONCILE_UPDATE_DEPLOYMENT_SUBSTAGE,
+				boot.Name)
 			handler.RecordEvent(keys.FailedUpdateDeployment, msg, err)
 
 			return reconcile.Result{Requeue: true}, true, err
@@ -459,7 +482,10 @@ func (handler *BootHandler) reconcileUpdateService(svc *corev1.Service, deploy *
 		if err != nil {
 			msg := fmt.Sprintf("Failed to update Service: %s", svc.GetName())
 			logger.Error(err, msg)
-			loganMetrics.UpdateReconcileErrors(boot.Kind, loganMetrics.RECONCILE_UPDATE_STAGE, loganMetrics.RECONCILE_UPDATE_SERVICE_SUBSTAGE, boot.Name)
+			loganMetrics.UpdateReconcileErrors(boot.Kind,
+				loganMetrics.RECONCILE_UPDATE_STAGE,
+				loganMetrics.RECONCILE_UPDATE_SERVICE_SUBSTAGE,
+				boot.Name)
 			handler.RecordEvent(keys.FailedUpdateService, msg, err)
 
 			return reconcile.Result{Requeue: true}, true, err
@@ -534,7 +560,10 @@ func (handler *BootHandler) reconcileUpdateOtherService(deploy *appsv1.Deploymen
 
 	runtimeSvcs, err := handler.listRuntimeService()
 	if err != nil {
-		loganMetrics.UpdateReconcileErrors(boot.Kind, loganMetrics.RECONCILE_UPDATE_STAGE, loganMetrics.RECONCILE_LIST_SERVICES_SUBSTAGE, boot.Name)
+		loganMetrics.UpdateReconcileErrors(boot.Kind,
+			loganMetrics.RECONCILE_UPDATE_STAGE,
+			loganMetrics.RECONCILE_LIST_SERVICES_SUBSTAGE,
+			boot.Name)
 		return reconcile.Result{Requeue: true}, true, err
 	}
 
@@ -619,7 +648,10 @@ func (handler *BootHandler) reconcileUpdateOtherService(deploy *appsv1.Deploymen
 			if err != nil {
 				msg := fmt.Sprintf("Failed to delete Other Service: %s", runtimeSvc.Name)
 				logger.Error(err, msg)
-				loganMetrics.UpdateReconcileErrors(boot.Kind, loganMetrics.RECONCILE_UPDATE_STAGE, loganMetrics.RECONCILE_DELETE_OTHER_SERVICE_SUBSTAGE, boot.Name)
+				loganMetrics.UpdateReconcileErrors(boot.Kind,
+					loganMetrics.RECONCILE_UPDATE_STAGE,
+					loganMetrics.RECONCILE_DELETE_OTHER_SERVICE_SUBSTAGE,
+					boot.Name)
 				handler.RecordEvent(keys.FailedDeleteService, msg, err)
 				return reconcile.Result{Requeue: true}, true, err
 			}
@@ -633,7 +665,10 @@ func (handler *BootHandler) reconcileUpdateOtherService(deploy *appsv1.Deploymen
 			if err != nil {
 				msg := fmt.Sprintf("Failed to update Other Service: %s", runtimeSvc.Name)
 				logger.Error(err, msg)
-				loganMetrics.UpdateReconcileErrors(boot.Kind, loganMetrics.RECONCILE_UPDATE_STAGE, loganMetrics.RECONCILE_UPDATE_OTHER_SERVICE_SUBSTAGE, boot.Name)
+				loganMetrics.UpdateReconcileErrors(boot.Kind,
+					loganMetrics.RECONCILE_UPDATE_STAGE,
+					loganMetrics.RECONCILE_UPDATE_OTHER_SERVICE_SUBSTAGE,
+					boot.Name)
 				handler.RecordEvent(keys.FailedUpdateService, msg, err)
 				return reconcile.Result{Requeue: true}, true, err
 			}
@@ -663,7 +698,10 @@ func (handler *BootHandler) reconcileUpdateOtherService(deploy *appsv1.Deploymen
 			if err != nil {
 				msg := fmt.Sprintf("Failed to create Other Service: %s", expectSvc.Name)
 				logger.Error(err, msg)
-				loganMetrics.UpdateReconcileErrors(boot.Kind, loganMetrics.RECONCILE_UPDATE_STAGE, loganMetrics.RECONCILE_CREATE_OTHER_SERVICE_SUBSTAGE, boot.Name)
+				loganMetrics.UpdateReconcileErrors(boot.Kind,
+					loganMetrics.RECONCILE_UPDATE_STAGE,
+					loganMetrics.RECONCILE_CREATE_OTHER_SERVICE_SUBSTAGE,
+					boot.Name)
 				handler.RecordEvent(keys.FailedCreateService, msg, err)
 				return reconcile.Result{Requeue: true}, true, err
 			}
@@ -686,11 +724,9 @@ func (handler *BootHandler) listRuntimeService() (*corev1.ServiceList, error) {
 	c := handler.Client
 	svcLabels := ServiceLabels(boot)
 	svcList := &corev1.ServiceList{}
-	listOptions := &client.ListOptions{
-		Namespace:     boot.Namespace,
-		LabelSelector: labels.SelectorFromSet(svcLabels),
-	}
-	err := c.List(context.TODO(), listOptions, svcList)
+	err := c.List(context.TODO(), svcList,
+		client.InNamespace(boot.Namespace),
+		client.MatchingLabels(svcLabels))
 	if err != nil {
 		logger.Error(err, "Failed to list services")
 		return nil, err
@@ -712,7 +748,10 @@ func (handler *BootHandler) ReconcileUpdateBootMeta() (reconcile.Result, bool, b
 	err := c.Get(context.TODO(), types.NamespacedName{Name: depName, Namespace: boot.Namespace}, depFound)
 	if err != nil {
 		logger.Error(err, "Failed to get Deployment")
-		loganMetrics.UpdateReconcileErrors(boot.Kind, loganMetrics.RECONCILE_UPDATE_BOOT_META_STAGE, loganMetrics.RECONCILE_GET_DEPLOYMENT_SUBSTAGE, boot.Name)
+		loganMetrics.UpdateReconcileErrors(boot.Kind,
+			loganMetrics.RECONCILE_UPDATE_BOOT_META_STAGE,
+			loganMetrics.RECONCILE_GET_DEPLOYMENT_SUBSTAGE,
+			boot.Name)
 		return reconcile.Result{}, true, false, err
 	}
 
@@ -720,7 +759,10 @@ func (handler *BootHandler) ReconcileUpdateBootMeta() (reconcile.Result, bool, b
 	svcList, err := handler.listRuntimeService()
 	if err != nil {
 		logger.Error(err, "Failed to list services")
-		loganMetrics.UpdateReconcileErrors(boot.Kind, loganMetrics.RECONCILE_UPDATE_BOOT_META_STAGE, loganMetrics.RECONCILE_LIST_SERVICES_SUBSTAGE, boot.Name)
+		loganMetrics.UpdateReconcileErrors(boot.Kind,
+			loganMetrics.RECONCILE_UPDATE_BOOT_META_STAGE,
+			loganMetrics.RECONCILE_LIST_SERVICES_SUBSTAGE,
+			boot.Name)
 		return reconcile.Result{}, true, false, err
 	}
 
@@ -728,12 +770,15 @@ func (handler *BootHandler) ReconcileUpdateBootMeta() (reconcile.Result, bool, b
 	// 3.1 Update Boot's annotation StatusAvailable
 	podList := &corev1.PodList{}
 	podLabels := PodLabels(boot)
-	labelSelector := labels.SelectorFromSet(podLabels)
-	listOptions := &client.ListOptions{Namespace: boot.Namespace, LabelSelector: labelSelector}
-	err = c.List(context.TODO(), listOptions, podList)
+	err = c.List(context.TODO(), podList,
+		client.InNamespace(boot.Namespace),
+		client.MatchingLabels(podLabels))
 	if err != nil {
 		logger.Error(err, "Failed to list pods")
-		loganMetrics.UpdateReconcileErrors(boot.Kind, loganMetrics.RECONCILE_UPDATE_BOOT_META_STAGE, loganMetrics.RECONCILE_LIST_PODS_SUBSTAGE, boot.Name)
+		loganMetrics.UpdateReconcileErrors(boot.Kind,
+			loganMetrics.RECONCILE_UPDATE_BOOT_META_STAGE,
+			loganMetrics.RECONCILE_LIST_PODS_SUBSTAGE,
+			boot.Name)
 		return reconcile.Result{}, true, false, err
 	}
 

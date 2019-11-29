@@ -6,7 +6,7 @@ os:
   - linux
 
 go:
-  - "1.12.x"
+  - "1.13.4"
 
 env:
   - TEST_SUITE=testsuite-1

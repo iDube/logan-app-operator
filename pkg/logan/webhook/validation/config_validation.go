@@ -4,28 +4,26 @@ import (
 	"context"
 	"github.com/logancloud/logan-app-operator/pkg/logan"
 	"github.com/logancloud/logan-app-operator/pkg/logan/config"
-	"github.com/logancloud/logan-app-operator/pkg/logan/webhook"
 	admssionv1beta1 "k8s.io/api/admission/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	"net/http"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/admission/types"
 	"strings"
 )
 
 // ConfigValidator is the struct for webhook config validation
 type ConfigValidator struct {
 	client            client.Client
-	decoder           types.Decoder
+	decoder           *admission.Decoder
 	OperatorNamespace string
 }
 
 var _ admission.Handler = &ConfigValidator{}
 
 // Handle will handle webhook config validation
-func (vHandler *ConfigValidator) Handle(ctx context.Context, req types.Request) types.Response {
+func (vHandler *ConfigValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
 	if !vHandler.targetConfig(req) {
 		return admission.ValidationResponse(true, "")
 	}
@@ -33,11 +31,11 @@ func (vHandler *ConfigValidator) Handle(ctx context.Context, req types.Request) 
 	msg, valid, err := vHandler.Validate(req)
 	if err != nil {
 		logger.Error(err, msg)
-		return admission.ErrorResponse(http.StatusBadRequest, err)
+		return admission.Errored(http.StatusBadRequest, err)
 	}
 
 	if !valid {
-		return webhook.ValidationResponse(false, http.StatusBadRequest, msg)
+		return admission.ValidationResponse(false, msg)
 	}
 
 	return admission.ValidationResponse(true, "")
@@ -51,10 +49,10 @@ func (vHandler *ConfigValidator) InjectClient(c client.Client) error {
 	return nil
 }
 
-var _ inject.Decoder = &ConfigValidator{}
+var _ admission.DecoderInjector = &ConfigValidator{}
 
 // InjectDecoder will inject decoder into ConfigValidator
-func (vHandler *ConfigValidator) InjectDecoder(d types.Decoder) error {
+func (vHandler *ConfigValidator) InjectDecoder(d *admission.Decoder) error {
 	vHandler.decoder = d
 	return nil
 }
@@ -64,7 +62,7 @@ func (vHandler *ConfigValidator) InjectDecoder(d types.Decoder) error {
 //   msg: Error message
 //   valid: true if valid, otherwise false
 //   error: decoding error, otherwise nil
-func (vHandler *ConfigValidator) Validate(req types.Request) (string, bool, error) {
+func (vHandler *ConfigValidator) Validate(req admission.Request) (string, bool, error) {
 	operation := req.AdmissionRequest.Operation
 	if operation == admssionv1beta1.Delete {
 		return "can not delete operator's configmap", false, nil
@@ -108,7 +106,7 @@ func (vHandler *ConfigValidator) Validate(req types.Request) (string, bool, erro
 	return "", true, nil
 }
 
-func (vHandler *ConfigValidator) targetConfig(req types.Request) bool {
+func (vHandler *ConfigValidator) targetConfig(req admission.Request) bool {
 	if req.AdmissionRequest.Name == logan.OperConfigmap &&
 		req.AdmissionRequest.Namespace == vHandler.OperatorNamespace {
 		return true
@@ -116,7 +114,7 @@ func (vHandler *ConfigValidator) targetConfig(req types.Request) bool {
 	return false
 }
 
-func (vHandler *ConfigValidator) decodeConfigmap(req types.Request, decoder types.Decoder) (*corev1.ConfigMap, error) {
+func (vHandler *ConfigValidator) decodeConfigmap(req admission.Request, decoder *admission.Decoder) (*corev1.ConfigMap, error) {
 	configmap := &corev1.ConfigMap{}
 	err := decoder.Decode(req, configmap)
 	if err != nil {

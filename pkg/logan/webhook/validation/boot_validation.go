@@ -32,7 +32,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/admission/types"
 	"sort"
 	"strconv"
 	"strings"
@@ -45,7 +44,7 @@ const (
 // BootValidator is a Handler that implements interfaces: admission.Handler, inject.Client and inject.Decoder
 type BootValidator struct {
 	client   util.K8SClient
-	decoder  types.Decoder
+	decoder  *admission.Decoder
 	Schema   *runtime.Scheme
 	Recorder record.EventRecorder
 }
@@ -53,7 +52,7 @@ type BootValidator struct {
 var _ admission.Handler = &BootValidator{}
 
 // Handle is the actual logic that will be called by every webhook request
-func (vHandler *BootValidator) Handle(ctx context.Context, req types.Request) types.Response {
+func (vHandler *BootValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
 	if operator.Ignore(req.AdmissionRequest.Namespace) {
 		return admission.ValidationResponse(true, "")
 	}
@@ -61,11 +60,11 @@ func (vHandler *BootValidator) Handle(ctx context.Context, req types.Request) ty
 	msg, valid, err := vHandler.Validate(req)
 	if err != nil {
 		logger.Error(err, msg)
-		return admission.ErrorResponse(http.StatusBadRequest, err)
+		return admission.Errored(http.StatusBadRequest, err)
 	}
 
 	if !valid {
-		return webhook.ValidationResponse(false, http.StatusBadRequest, msg)
+		return admission.ValidationResponse(false, msg)
 	}
 
 	return admission.ValidationResponse(true, "")
@@ -79,10 +78,10 @@ func (vHandler *BootValidator) InjectClient(c client.Client) error {
 	return nil
 }
 
-var _ inject.Decoder = &BootValidator{}
+var _ admission.DecoderInjector = &BootValidator{}
 
 // InjectDecoder will inject decoder into BootValidator
-func (vHandler *BootValidator) InjectDecoder(d types.Decoder) error {
+func (vHandler *BootValidator) InjectDecoder(d *admission.Decoder) error {
 	vHandler.decoder = d
 	return nil
 }
@@ -92,7 +91,7 @@ func (vHandler *BootValidator) InjectDecoder(d types.Decoder) error {
 //   msg: Error message
 //   valid: true if valid, otherwise false
 //   error: decoding error, otherwise nil
-func (vHandler *BootValidator) Validate(req types.Request) (string, bool, error) {
+func (vHandler *BootValidator) Validate(req admission.Request) (string, bool, error) {
 	operation := req.AdmissionRequest.Operation
 
 	boot, err := webhook.DecodeBoot(req, vHandler.decoder)
@@ -160,7 +159,7 @@ func (vHandler *BootValidator) Validate(req types.Request) (string, bool, error)
 }
 
 // recordRevision will make a new revision record on boot created or update
-func (vHandler *BootValidator) recordRevision(inputBoot *v1.Boot, req types.Request) (bool, error) {
+func (vHandler *BootValidator) recordRevision(inputBoot *v1.Boot, req admission.Request) (bool, error) {
 	// if false,do not record a revision
 	//if !logan.MutationDefaulter {
 	//	return true, nil
@@ -259,7 +258,7 @@ func (vHandler *BootValidator) recordRevision(inputBoot *v1.Boot, req types.Requ
 }
 
 // mergeBootDefaultValue will merge boot config with operator app config
-func (vHandler *BootValidator) mergeBootDefaultValue(boot *v1.Boot, req types.Request) (*appv1.BootSpec, *metav1.ObjectMeta) {
+func (vHandler *BootValidator) mergeBootDefaultValue(boot *v1.Boot, req admission.Request) (*appv1.BootSpec, *metav1.ObjectMeta) {
 	appType := req.AdmissionRequest.Kind.Kind
 	if appType == webhook.ApiTypeJava {
 		javaBoot := boot.DeepCopyJava()

@@ -377,7 +377,11 @@ func GetProfileBootConfig(boot *appv1.Boot, logger logr.Logger) (*config.BootCon
 	if boot.Annotations != nil {
 		if _, exist := boot.Annotations[config.BootProfileAnnotationKey]; exist {
 			bootProfile := boot.Annotations[config.BootProfileAnnotationKey]
-			if bootProfile == logan.BootJava || bootProfile == logan.BootPhp || bootProfile == logan.BootPython || bootProfile == logan.BootNodeJS || bootProfile == logan.BootWeb {
+			if bootProfile == logan.BootJava ||
+				bootProfile == logan.BootPhp ||
+				bootProfile == logan.BootPython ||
+				bootProfile == logan.BootNodeJS ||
+				bootProfile == logan.BootWeb {
 				return nil, fmt.Errorf("boot using profile, but profile [%s] is not allow", bootProfile)
 			}
 			profileConfig := config.ProfileConfig[bootProfile]
