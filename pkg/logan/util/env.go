@@ -13,6 +13,7 @@ import (
 // this returns a list of descriptions of individual characteristics of the
 // value that were not valid.  Otherwise this returns an empty list or nil.
 type ValidateNameFunc apimachineryvalidation.ValidateNameFunc
+
 // ValidateSecretName is a ValidateNameFunc for secret name
 var ValidateSecretName = NameIsDNSSubdomain
 
