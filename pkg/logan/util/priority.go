@@ -19,7 +19,7 @@ const (
 	// SystemClusterCritical is the system priority for cluster-critical
 	SystemClusterCritical = SystemPriorityClassPrefix + "cluster-critical"
 	// SystemNodeCritical is the system priority for node-critical
-	SystemNodeCritical    = SystemPriorityClassPrefix + "node-critical"
+	SystemNodeCritical = SystemPriorityClassPrefix + "node-critical"
 )
 
 // PriorityClassPermittedInNamespace returns true if we allow the given priority class name in the

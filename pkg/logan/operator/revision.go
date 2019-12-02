@@ -4,10 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	v1 "github.com/logancloud/logan-app-operator/pkg/apis/app/v1"
-	"github.com/logancloud/logan-app-operator/pkg/logan"
 	"github.com/logancloud/logan-app-operator/pkg/logan/config"
 	"github.com/sergi/go-diff/diffmatchpatch"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/yaml"
 )
@@ -38,8 +36,6 @@ func InitBootRevision(boot *v1.Boot) *v1.BootRevision {
 	replica := int32(0)
 	revisionBoot.Spec.Replicas = &replica
 
-	revisionBoot.Spec.Env = cleanEnv(revisionBoot.Spec.Env)
-
 	return revisionBoot
 }
 
@@ -52,18 +48,6 @@ func initRevisionAnnotations(boot *v1.Boot) map[string]string {
 		}
 	}
 	return map[string]string{}
-}
-
-func cleanEnv(envs []corev1.EnvVar) []corev1.EnvVar {
-	ret := make([]corev1.EnvVar, 0)
-	if envs != nil {
-		for _, env := range envs {
-			if _, found := logan.BizEnvs[env.Name]; !found {
-				ret = append(ret, env)
-			}
-		}
-	}
-	return ret
 }
 
 // RevisionDiff will compute the diff with two revision
