@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/appscode/jsonpatch"
-	v1 "github.com/logancloud/logan-app-operator/pkg/apis/app/v1"
 	"github.com/logancloud/logan-app-operator/pkg/controller/javaboot"
 	"github.com/logancloud/logan-app-operator/pkg/controller/nodejsboot"
 	"github.com/logancloud/logan-app-operator/pkg/controller/phpboot"
@@ -25,7 +23,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/runtime/inject"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
-	"sigs.k8s.io/controller-runtime/pkg/webhook/admission/types"
 )
 
 // Now BootMutator only add an annotation to the Boot.
@@ -33,7 +30,7 @@ import (
 // BootMutator is a Handler that implements interfaces: admission.Handler, inject.Client and inject.Decoder
 type BootMutator struct {
 	client   util.K8SClient
-	decoder  types.Decoder
+	decoder  *admission.Decoder
 	Schema   *runtime.Scheme
 	Recorder record.EventRecorder
 }
@@ -43,15 +40,15 @@ var logger = logf.Log.WithName("logan_webhook_mutation")
 var _ admission.Handler = &BootMutator{}
 
 // Handle is the actual logic that will be called by every webhook request
-func (mHandler *BootMutator) Handle(ctx context.Context, req types.Request) types.Response {
+func (mHandler *BootMutator) Handle(ctx context.Context, req admission.Request) admission.Response {
 	if operator.Ignore(req.AdmissionRequest.Namespace) {
-		return admission.PatchResponse(&v1.Boot{}, &v1.Boot{})
+		return admission.PatchResponseFromRaw(req.AdmissionRequest.Object.Raw, req.AdmissionRequest.Object.Raw)
 	}
 
 	patchResponse, err := mHandler.mutateBoot(ctx, req)
 	if err != nil {
 		logger.Error(err, "mutate error")
-		return admission.ErrorResponse(http.StatusInternalServerError, err)
+		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
 	logger.V(1).Info("patch", "result", patchResponse)
@@ -60,7 +57,7 @@ func (mHandler *BootMutator) Handle(ctx context.Context, req types.Request) type
 }
 
 // mutateBoot mutate the Boot
-func (mHandler *BootMutator) mutateBoot(ctx context.Context, req types.Request) (types.Response, error) {
+func (mHandler *BootMutator) mutateBoot(ctx context.Context, req admission.Request) (admission.Response, error) {
 	c := mHandler.client
 	scheme := mHandler.Schema
 	recorder := mHandler.Recorder
@@ -81,9 +78,9 @@ func (mHandler *BootMutator) mutateBoot(ctx context.Context, req types.Request) 
 
 		marshaledBoot, err := json.Marshal(bootCopy)
 		if err != nil {
-			return admission.ErrorResponse(http.StatusInternalServerError, err), err
+			return admission.Errored(http.StatusInternalServerError, err), err
 		}
-		return PatchResponseFromRaw(req.AdmissionRequest.Object.Raw, marshaledBoot), nil
+		return admission.PatchResponseFromRaw(req.AdmissionRequest.Object.Raw, marshaledBoot), nil
 	} else if bootType == webhook.ApiTypePhp {
 		phpBoot, err := webhook.DecodePhpBoot(req, mHandler.decoder)
 		if err != nil {
@@ -98,9 +95,9 @@ func (mHandler *BootMutator) mutateBoot(ctx context.Context, req types.Request) 
 
 		marshaledBoot, err := json.Marshal(bootCopy)
 		if err != nil {
-			return admission.ErrorResponse(http.StatusInternalServerError, err), err
+			return admission.Errored(http.StatusInternalServerError, err), err
 		}
-		return PatchResponseFromRaw(req.AdmissionRequest.Object.Raw, marshaledBoot), nil
+		return admission.PatchResponseFromRaw(req.AdmissionRequest.Object.Raw, marshaledBoot), nil
 	} else if bootType == webhook.ApiTypePython {
 		pythonBoot, err := webhook.DecodePythonBoot(req, mHandler.decoder)
 		if err != nil {
@@ -115,9 +112,9 @@ func (mHandler *BootMutator) mutateBoot(ctx context.Context, req types.Request) 
 
 		marshaledBoot, err := json.Marshal(bootCopy)
 		if err != nil {
-			return admission.ErrorResponse(http.StatusInternalServerError, err), err
+			return admission.Errored(http.StatusInternalServerError, err), err
 		}
-		return PatchResponseFromRaw(req.AdmissionRequest.Object.Raw, marshaledBoot), nil
+		return admission.PatchResponseFromRaw(req.AdmissionRequest.Object.Raw, marshaledBoot), nil
 	} else if bootType == webhook.ApiTypeNodeJS {
 		nodejsBoot, err := webhook.DecodeNodeJSBoot(req, mHandler.decoder)
 		if err != nil {
@@ -132,9 +129,9 @@ func (mHandler *BootMutator) mutateBoot(ctx context.Context, req types.Request) 
 
 		marshaledBoot, err := json.Marshal(bootCopy)
 		if err != nil {
-			return admission.ErrorResponse(http.StatusInternalServerError, err), err
+			return admission.Errored(http.StatusInternalServerError, err), err
 		}
-		return PatchResponseFromRaw(req.AdmissionRequest.Object.Raw, marshaledBoot), nil
+		return admission.PatchResponseFromRaw(req.AdmissionRequest.Object.Raw, marshaledBoot), nil
 	} else if bootType == webhook.ApiTypeWeb {
 		webBoot, err := webhook.DecodeWebBoot(req, mHandler.decoder)
 		if err != nil {
@@ -149,33 +146,15 @@ func (mHandler *BootMutator) mutateBoot(ctx context.Context, req types.Request) 
 
 		marshaledBoot, err := json.Marshal(bootCopy)
 		if err != nil {
-			return admission.ErrorResponse(http.StatusInternalServerError, err), err
+			return admission.Errored(http.StatusInternalServerError, err), err
 		}
-		return PatchResponseFromRaw(req.AdmissionRequest.Object.Raw, marshaledBoot), nil
+		return admission.PatchResponseFromRaw(req.AdmissionRequest.Object.Raw, marshaledBoot), nil
 	}
 
-	return types.Response{Response: &admissionv1beta1.AdmissionResponse{Allowed: false}}, nil
+	return admission.Response{AdmissionResponse: admissionv1beta1.AdmissionResponse{Allowed: false}}, nil
 }
 
-// PatchResponseFromRaw takes 2 byte arrays and returns a new response with json patch.
-// The original object should be passed in as raw bytes to avoid the roundtripping problem
-// described in https://github.com/kubernetes-sigs/kubebuilder/issues/510.
-// PR https://github.com/kubernetes-sigs/controller-runtime/pull/256
-func PatchResponseFromRaw(original, current []byte) types.Response {
-	patches, err := jsonpatch.CreatePatch(original, current)
-	if err != nil {
-		return admission.ErrorResponse(http.StatusInternalServerError, err)
-	}
-	return types.Response{
-		Patches: patches,
-		Response: &admissionv1beta1.AdmissionResponse{
-			Allowed:   true,
-			PatchType: func() *admissionv1beta1.PatchType { pt := admissionv1beta1.PatchTypeJSONPatch; return &pt }(),
-		},
-	}
-}
-
-func mutationDefault(handler *operator.BootHandler, req types.Request, bootName string) {
+func mutationDefault(handler *operator.BootHandler, req admission.Request, bootName string) {
 	if logan.MutationDefaulter {
 		changed := handler.DefaultValue()
 
@@ -189,7 +168,7 @@ func mutationDefault(handler *operator.BootHandler, req types.Request, bootName 
 	}
 }
 
-func mutationBoot(metaData *metav1.ObjectMeta, req types.Request) {
+func mutationBoot(metaData *metav1.ObjectMeta, req admission.Request) {
 	if metaData == nil {
 		return
 	}
@@ -215,10 +194,10 @@ func (mHandler *BootMutator) InjectClient(c client.Client) error {
 	return nil
 }
 
-var _ inject.Decoder = &BootMutator{}
+var _ admission.DecoderInjector = &BootMutator{}
 
 // InjectDecoder will inject decoder into BootMutator
-func (mHandler *BootMutator) InjectDecoder(d types.Decoder) error {
+func (mHandler *BootMutator) InjectDecoder(d *admission.Decoder) error {
 	mHandler.decoder = d
 	return nil
 }

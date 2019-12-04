@@ -46,9 +46,14 @@ spec:
           volumeMounts:
             - mountPath: /etc/logan
               name: logan-app-operator-config
+            - mountPath: /tmp/k8s-webhook-server/serving-certs
+              name: logan-app-operator-webhook
       volumes:
         - name: logan-app-operator-config
           configMap:
             name: logan-app-operator-config-dev
+        - name: logan-app-operator-webhook
+          secret:
+            secretName: logan-app-operator-webhook-dev
   strategy:
     type: Recreate

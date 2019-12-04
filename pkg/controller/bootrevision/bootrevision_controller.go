@@ -40,14 +40,15 @@ func newReconciler(mgr manager.Manager) reconcile.Reconciler {
 	return &ReconcileBootRevision{
 		client:   util.NewClient(mgr.GetClient()),
 		scheme:   mgr.GetScheme(),
-		recorder: mgr.GetRecorder("bootRevision-controller"),
+		recorder: mgr.GetEventRecorderFor("bootRevision-controller"),
 	}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
 func add(mgr manager.Manager, r reconcile.Reconciler) error {
 	// Create a new controller
-	c, err := controller.New("bootrevision-controller", mgr, controller.Options{Reconciler: r, MaxConcurrentReconciles: logan.MaxConcurrentReconciles})
+	c, err := controller.New("bootrevision-controller", mgr,
+		controller.Options{Reconciler: r, MaxConcurrentReconciles: logan.MaxConcurrentReconciles})
 	if err != nil {
 		return err
 	}
