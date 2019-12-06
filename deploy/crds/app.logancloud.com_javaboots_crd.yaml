@@ -3,19 +3,29 @@ kind: CustomResourceDefinition
 metadata:
   name: javaboots.app.logancloud.com
 spec:
+  additionalPrinterColumns:
+  - JSONPath: .spec.replicas
+    description: Number of desired pods
+    name: Desired
+    type: integer
+  - JSONPath: .spec.version
+    description: The Version of Boot
+    name: Version
+    type: string
   group: app.logancloud.com
   names:
     kind: JavaBoot
     listKind: JavaBootList
     plural: javaboots
-    singular: javaboot
     shortNames:
-      - java
+    - java
+    singular: javaboot
   scope: Namespaced
   subresources:
     status: {}
   validation:
     openAPIV3Schema:
+      description: JavaBoot is the Schema for the javaboots API
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -38,6 +48,8 @@ spec:
           required:
             - name
         spec:
+          description: BootSpec defines the desired state of Boot for specified types,
+            as JavaBoot/PhpBoot/PythonBoot/NodeJSBoot
           properties:
             command:
               description: Command is command for boot's container. If empty, will
@@ -47,26 +59,109 @@ spec:
               type: array
             env:
               description: Env is list of environment variables to set in the app
-                container. +patchMergeKey=name +patchStrategy=merge
+                container.
               items:
-                type: object
+                description: EnvVar represents an environment variable present in
+                  a Container.
                 properties:
                   name:
+                    description: Name of the environment variable. Must be a C_IDENTIFIER.
                     type: string
                     pattern: ^[-._a-zA-Z][-._a-zA-Z0-9]*$
                   value:
+                    description: 'Variable references $(VAR_NAME) are expanded using
+                      the previous defined environment variables in the container
+                      and any service environment variables. If a variable cannot
+                      be resolved, the reference in the input string will be unchanged.
+                      The $(VAR_NAME) syntax can be escaped with a double $$, ie:
+                      $$(VAR_NAME). Escaped references will never be expanded, regardless
+                      of whether the variable exists or not. Defaults to "".'
                     type: string
+                  valueFrom:
+                    description: Source for the environment variable's value. Cannot
+                      be used if value is not empty.
+                    properties:
+                      configMapKeyRef:
+                        description: Selects a key of a ConfigMap.
+                        properties:
+                          key:
+                            description: The key to select.
+                            type: string
+                          name:
+                            description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                              TODO: Add other useful fields. apiVersion, kind, uid?'
+                            type: string
+                          optional:
+                            description: Specify whether the ConfigMap or its key
+                              must be defined
+                            type: boolean
+                        required:
+                        - key
+                        type: object
+                      fieldRef:
+                        description: 'Selects a field of the pod: supports metadata.name,
+                          metadata.namespace, metadata.labels, metadata.annotations,
+                          spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP.'
+                        properties:
+                          apiVersion:
+                            description: Version of the schema the FieldPath is written
+                              in terms of, defaults to "v1".
+                            type: string
+                          fieldPath:
+                            description: Path of the field to select in the specified
+                              API version.
+                            type: string
+                        required:
+                        - fieldPath
+                        type: object
+                      resourceFieldRef:
+                        description: 'Selects a resource of the container: only resources
+                          limits and requests (limits.cpu, limits.memory, limits.ephemeral-storage,
+                          requests.cpu, requests.memory and requests.ephemeral-storage)
+                          are currently supported.'
+                        properties:
+                          containerName:
+                            description: 'Container name: required for volumes, optional
+                              for env vars'
+                            type: string
+                          divisor:
+                            description: Specifies the output format of the exposed
+                              resources, defaults to "1"
+                            type: string
+                          resource:
+                            description: 'Required: resource to select'
+                            type: string
+                        required:
+                        - resource
+                        type: object
+                      secretKeyRef:
+                        description: Selects a key of a secret in the pod's namespace
+                        properties:
+                          key:
+                            description: The key of the secret to select from.  Must
+                              be a valid secret key.
+                            type: string
+                          name:
+                            description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                              TODO: Add other useful fields. apiVersion, kind, uid?'
+                            type: string
+                          optional:
+                            description: Specify whether the Secret or its key must
+                              be defined
+                            type: boolean
+                        required:
+                        - key
+                        type: object
+                    type: object
+                required:
+                - name
+                type: object
               type: array
             health:
               description: Health is check path for the app container.
-              type: string
-              minLength: 0
               maxLength: 2048
-            readiness:
-              description: Readiness is a readiness check path for the app container.
-              type: string
               minLength: 0
-              maxLength: 2048
+              type: string
             image:
               description: Image is the app container' image. Image must not have
                 a tag version.
@@ -74,11 +169,13 @@ spec:
             nodePort:
               description: NodePort will expose the service on each node’s IP at a
                 random port, default is ``
-              type: string
               enum:
-                - "true"
-                - "false"
+              - "true"
+              - "false"
+              type: string
             nodeSelector:
+              additionalProperties:
+                type: string
               description: NodeSelector is a selector which must be true for the pod
                 to fit on a node. Selector which must match a node's labels for the
                 pod to be scheduled on that node.
@@ -86,9 +183,9 @@ spec:
             port:
               description: Port that are exposed by the app container
               format: int32
-              type: integer
-              minimum: 1
               maximum: 65535
+              minimum: 1
+              type: integer
             priority:
               description: Priority will set the priorityClassName for the boot's
                 workloads, default is ``
@@ -96,15 +193,16 @@ spec:
             prometheus:
               description: Prometheus will scrape metrics from the service, default
                 is `true`
-              type: string
               enum:
-                - ""
-                - "true"
-                - "false"
+              - ""
+              - "true"
+              - "false"
+              type: string
             pvc:
               description: pvc is list of PersistentVolumeClaim to set in the app
-                container. +patchMergeKey=name +patchStrategy=merge
+                container.
               items:
+                description: PersistentVolumeClaimMount defines the Boot match a PersistentVolumeClaim
                 properties:
                   mountPath:
                     description: Path within the container at which the volume should
@@ -121,24 +219,30 @@ spec:
                       or unspecified). Defaults to false.
                     type: boolean
                 required:
-                - name
                 - mountPath
+                - name
                 type: object
               type: array
+            readiness:
+              description: Readiness is a readiness check path for the app container.
+              maxLength: 2048
+              minLength: 0
+              type: string
             replicas:
               description: Replicas is the number of desired replicas. This is a pointer
                 to distinguish between explicit zero and unspecified. Defaults to
                 1.
               format: int32
-              type: integer
-              minimum: 0
               maximum: 100
+              minimum: 0
+              type: integer
             resources:
               description: Resources is the compute resource requirements for the
                 app container
-              type: object
               properties:
                 limits:
+                  description: 'Limits describes the maximum amount of compute resources
+                    allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                   type: object
                   properties:
                     cpu:
@@ -162,6 +266,10 @@ spec:
                       maxLength: 63
                       pattern: ^([+]?[0-9.]+)([eEinumkKMGTP]*[+]?[0-9]*)$
                 requests:
+                  description: 'Requests describes the minimum amount of compute resources
+                    required. If Requests is omitted for a container, it defaults
+                    to Limits if that is explicitly specified, otherwise to an implementation-defined
+                    value. More info: https://kubernetes.io/docs/concepts/configuration/manage-compute-resources-container/'
                   type: object
                   properties:
                     cpu:
@@ -184,14 +292,15 @@ spec:
                       minLength: 1
                       maxLength: 63
                       pattern: ^([+]?[0-9.]+)([eEinumkKMGTP]*[+]?[0-9]*)$
+              type: object
             sessionAffinity:
               description: SessionAffinity is SessionAffinity for boot's created service.
                 If empty, will not set
-              type: string
               enum:
-                - ""
-                - "ClientIP"
-                - "None"
+              - ClientIP
+              - None
+              - ""
+              type: string
             subDomain:
               description: Reserved, not used. for latter use
               type: string
@@ -203,6 +312,8 @@ spec:
           - version
           type: object
         status:
+          description: BootStatus defines the observed state of Boot for specified
+            types, as JavaBoot/PhpBoot/PythonBoot/NodeJSBoot
           properties:
             deploy:
               type: string
@@ -211,6 +322,7 @@ spec:
             type:
               type: string
           type: object
+      type: object
   version: v1
   versions:
   - name: v1

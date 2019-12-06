@@ -69,7 +69,7 @@ func (in *BootRevision) DeepCopyObject() runtime.Object {
 func (in *BootRevisionList) DeepCopyInto(out *BootRevisionList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]BootRevision, len(*in))
@@ -202,7 +202,7 @@ func (in *JavaBoot) DeepCopyObject() runtime.Object {
 func (in *JavaBootList) DeepCopyInto(out *JavaBootList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]JavaBoot, len(*in))
@@ -263,7 +263,7 @@ func (in *NodeJSBoot) DeepCopyObject() runtime.Object {
 func (in *NodeJSBootList) DeepCopyInto(out *NodeJSBootList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]NodeJSBoot, len(*in))
@@ -340,7 +340,7 @@ func (in *PhpBoot) DeepCopyObject() runtime.Object {
 func (in *PhpBootList) DeepCopyInto(out *PhpBootList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]PhpBoot, len(*in))
@@ -401,7 +401,7 @@ func (in *PythonBoot) DeepCopyObject() runtime.Object {
 func (in *PythonBootList) DeepCopyInto(out *PythonBootList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]PythonBoot, len(*in))
@@ -462,7 +462,7 @@ func (in *WebBoot) DeepCopyObject() runtime.Object {
 func (in *WebBootList) DeepCopyInto(out *WebBootList) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	out.ListMeta = in.ListMeta
+	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
 		*out = make([]WebBoot, len(*in))

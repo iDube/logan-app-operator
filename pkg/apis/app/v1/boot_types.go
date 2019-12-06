@@ -38,6 +38,8 @@ type BootSpec struct {
 	// Replicas is the number of desired replicas.
 	// This is a pointer to distinguish between explicit zero and unspecified.
 	// Defaults to 1.
+	// +kubebuilder:validation:Minimum=0
+	// +kubebuilder:validation:Maximum=100
 	Replicas *int32 `json:"replicas,omitempty"`
 	// Env is list of environment variables to set in the app container.
 	// +optional
@@ -45,14 +47,21 @@ type BootSpec struct {
 	// +patchStrategy=merge
 	Env []corev1.EnvVar `json:"env,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 	// Port that are exposed by the app container
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=65535
 	Port int32 `json:"port,omitempty"`
 	// Reserved, not used. for latter use
 	SubDomain string `json:"subDomain,omitempty"`
 	// Health is check path for the app container.
+	// +kubebuilder:validation:MinLength=0
+	// +kubebuilder:validation:MaxLength=2048
 	Health *string `json:"health,omitempty"`
 	// Readiness is a readiness check path for the app container.
+	// +kubebuilder:validation:MinLength=0
+	// +kubebuilder:validation:MaxLength=2048
 	Readiness *string `json:"readiness,omitempty"`
 	// Prometheus will scrape metrics from the service, default is `true`
+	// +kubebuilder:validation:Enum=true;false
 	Prometheus string `json:"prometheus,omitempty"`
 	// Resources is the compute resource requirements for the app container
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
@@ -62,8 +71,10 @@ type BootSpec struct {
 	// Command is command for boot's container. If empty, will use image's ENTRYPOINT, specified here if needed override.
 	Command []string `json:"command,omitempty"`
 	// SessionAffinity is SessionAffinity for boot's created service. If empty, will not set
+	// +kubebuilder:validation:Enum=ClientIP;None
 	SessionAffinity string `json:"sessionAffinity,omitempty"`
 	// NodePort will expose the service on each node’s IP at a random port, default is ``
+	// +kubebuilder:validation:Enum=true;false
 	NodePort string `json:"nodePort,omitempty"`
 	// pvc is list of PersistentVolumeClaim to set in the app container.
 	// +optional
@@ -90,6 +101,8 @@ type BootStatus struct {
 // +k8s:openapi-gen=true
 type PersistentVolumeClaimMount struct {
 	// This must match the Name of a PersistentVolumeClaim.
+	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:Maximum=63
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 	// Mounted read-only if true, read-write otherwise (false or unspecified).
 	// Defaults to false.
@@ -97,5 +110,6 @@ type PersistentVolumeClaimMount struct {
 	ReadOnly bool `json:"readOnly,omitempty" protobuf:"varint,2,opt,name=readOnly"`
 	// Path within the container at which the volume should be mounted.  Must
 	// not contain ':'.
+	// +kubebuilder:validation:Minimum=1
 	MountPath string `json:"mountPath" protobuf:"bytes,3,opt,name=mountPath"`
 }

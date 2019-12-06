@@ -6,10 +6,6 @@ mkdir -p ${HOME}
 chown ${USER_UID}:0 ${HOME}
 chmod ug+rwx ${HOME}
 
-mkdir -p /etc/webhook/cert
-chown ${USER_UID}:0 /etc/webhook/cert
-chmod ug+rwx /etc/webhook/cert
-
 # runtime user will need to be able to self-insert in /etc/passwd
 chmod g+rw /etc/passwd
 
