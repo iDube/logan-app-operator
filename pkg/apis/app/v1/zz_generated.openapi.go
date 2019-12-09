@@ -29,6 +29,7 @@ func schema_pkg_apis_app_v1_Boot(ref common.ReferenceCallback) common.OpenAPIDef
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "Boot is the common Schema for the all boot types API",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -87,6 +88,7 @@ func schema_pkg_apis_app_v1_BootRevision(ref common.ReferenceCallback) common.Op
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "BootRevision is the Schema for the bootrevisions API",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -145,6 +147,7 @@ func schema_pkg_apis_app_v1_BootSpec(ref common.ReferenceCallback) common.OpenAP
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "BootSpec defines the desired state of Boot for specified types, as JavaBoot/PhpBoot/PythonBoot/NodeJSBoot",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"image": {
 						SchemaProps: spec.SchemaProps{
@@ -232,6 +235,7 @@ func schema_pkg_apis_app_v1_BootSpec(ref common.ReferenceCallback) common.OpenAP
 							Description: "NodeSelector is a selector which must be true for the pod to fit on a node. Selector which must match a node's labels for the pod to be scheduled on that node.",
 							Type:        []string{"object"},
 							AdditionalProperties: &spec.SchemaOrBool{
+								Allows: true,
 								Schema: &spec.Schema{
 									SchemaProps: spec.SchemaProps{
 										Type:   []string{"string"},
@@ -309,6 +313,7 @@ func schema_pkg_apis_app_v1_BootStatus(ref common.ReferenceCallback) common.Open
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "BootStatus defines the observed state of Boot for specified types, as JavaBoot/PhpBoot/PythonBoot/NodeJSBoot",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"type": {
 						SchemaProps: spec.SchemaProps{
@@ -331,7 +336,6 @@ func schema_pkg_apis_app_v1_BootStatus(ref common.ReferenceCallback) common.Open
 				},
 			},
 		},
-		Dependencies: []string{},
 	}
 }
 
@@ -340,6 +344,7 @@ func schema_pkg_apis_app_v1_JavaBoot(ref common.ReferenceCallback) common.OpenAP
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "JavaBoot is the Schema for the javaboots API",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -383,6 +388,7 @@ func schema_pkg_apis_app_v1_NodeJSBoot(ref common.ReferenceCallback) common.Open
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "NodeJSBoot is the Schema for the nodejsboots API",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -426,6 +432,7 @@ func schema_pkg_apis_app_v1_PersistentVolumeClaimMount(ref common.ReferenceCallb
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "PersistentVolumeClaimMount defines the Boot match a PersistentVolumeClaim",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"name": {
 						SchemaProps: spec.SchemaProps{
@@ -452,7 +459,6 @@ func schema_pkg_apis_app_v1_PersistentVolumeClaimMount(ref common.ReferenceCallb
 				Required: []string{"name", "mountPath"},
 			},
 		},
-		Dependencies: []string{},
 	}
 }
 
@@ -461,6 +467,7 @@ func schema_pkg_apis_app_v1_PhpBoot(ref common.ReferenceCallback) common.OpenAPI
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "PhpBoot is the Schema for the phpboots API",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -504,6 +511,7 @@ func schema_pkg_apis_app_v1_PythonBoot(ref common.ReferenceCallback) common.Open
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "PythonBoot is the Schema for the pythonboots API",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
@@ -547,6 +555,7 @@ func schema_pkg_apis_app_v1_WebBoot(ref common.ReferenceCallback) common.OpenAPI
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Description: "WebBoot is the Schema for the webboots API",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{

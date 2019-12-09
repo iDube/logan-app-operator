@@ -16,6 +16,7 @@ const (
 	SystemPriorityClassPrefix = "system-"
 	// NOTE: In order to avoid conflict of names with user-defined priority classes, all the names must
 	// start with SystemPriorityClassPrefix.
+
 	// SystemClusterCritical is the system priority for cluster-critical
 	SystemClusterCritical = SystemPriorityClassPrefix + "cluster-critical"
 	// SystemNodeCritical is the system priority for node-critical

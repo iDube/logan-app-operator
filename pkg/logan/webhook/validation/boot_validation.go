@@ -443,7 +443,7 @@ func (vHandler *BootValidator) checkPvcOwner(boot *appv1.Boot, pvcMount appv1.Pe
 		}, pvc)
 
 	if err != nil && errors.IsNotFound(err) {
-		return false, false, false, fmt.Sprintf("the pvc %s  don't exist in namespace %s.",
+		return false, false, false, fmt.Sprintf("the pvc %s don't exist in namespace %s.",
 			pvcName, boot.Namespace)
 	}
 
