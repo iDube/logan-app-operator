@@ -34,6 +34,8 @@ const (
 	// BootRestartedAtAnnotationKey is the annotation key for recording restarted time
 	BootRestartedAtAnnotationKey = "app.logancloud.com/restartedAt"
 
+	// WorkloadAnnotationKey is the annotation key for storing boot's current workload type
+	WorkloadAnnotationKey = "app.logancloud.com/workload"
 	// DeployAnnotationKey is the annotation key for storing boot's current Deployment name
 	DeployAnnotationKey = "app.logancloud.com/deploy"
 	// ServicesAnnotationKey is the annotation key for storing boot's current services name list

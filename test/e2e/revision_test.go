@@ -108,12 +108,21 @@ var _ = Describe("Testing Boot Revision [Revision]", func() {
 				lst, err := k8sClient.ListRevision(boot.Namespace, podLabels)
 				Expect(err).ShouldNot(HaveOccurred())
 				Expect(len(lst.Items)).Should(Equal(1))
-				r := lst.Items[0]
-				Expect(r.Name).Should(Equal(bootKey.Name + "-1"))
-				Expect(r.GetRevisionId()).Should(Equal(1))
-				Expect(len(r.GetOwnerReferences())).Should(Equal(1))
-				Expect(r.Annotations[keys.BootRevisionDiffAnnotationKey]).Should(Equal(""))
-				Expect(r.Annotations[keys.BootRevisionPhaseAnnotationKey]).Should(Or(Equal(operator.RevisionPhaseActive), Equal(operator.RevisionPhaseRunning)))
+				var previous *bootv1.BootRevision
+				for _, item := range lst.Items {
+					if item.Namespace == bootKey.Name+"-1" {
+						previous = &item
+						break
+					}
+				}
+				Expect(previous).ShouldNot(Equal(nil))
+				if previous != nil {
+					Expect(previous.Name).Should(Equal(bootKey.Name + "-1"))
+					Expect(previous.GetRevisionId()).Should(Equal(1))
+					Expect(len(previous.GetOwnerReferences())).Should(Equal(1))
+					Expect(previous.Annotations[keys.BootRevisionDiffAnnotationKey]).Should(Equal(""))
+					Expect(previous.Annotations[keys.BootRevisionPhaseAnnotationKey]).Should(Or(Equal(operator.RevisionPhaseActive), Equal(operator.RevisionPhaseRunning)))
+				}
 			}
 			e2eCase.Run()
 		})
@@ -145,13 +154,22 @@ var _ = Describe("Testing Boot Revision [Revision]", func() {
 				Expect(latest.Annotations[keys.BootRevisionDiffAnnotationKey]).ShouldNot(Equal(""))
 				Expect(latest.Annotations[keys.BootRevisionPhaseAnnotationKey]).Should(Or(Equal(operator.RevisionPhaseActive), Equal(operator.RevisionPhaseRunning)))
 
-				previous := lst.Items[0]
-				Expect(previous.Name).Should(Equal(bootKey.Name + "-1"))
-				Expect(previous.GetRevisionId()).Should(Equal(1))
-				Expect(len(previous.GetOwnerReferences())).Should(Equal(1))
-				Expect(previous.Annotations[keys.BootRevisionDiffAnnotationKey]).Should(Equal(""))
-				Expect(previous.Annotations[keys.BootRevisionPhaseAnnotationKey]).Should(Or(Equal(operator.RevisionPhaseComplete), Equal(operator.RevisionPhaseCancel)))
+				var previous *bootv1.BootRevision
+				for _, item := range lst.Items {
+					if item.Namespace == bootKey.Name+"-1" {
+						previous = &item
+						break
+					}
+				}
 
+				Expect(previous).ShouldNot(Equal(nil))
+				if previous != nil {
+					Expect(previous.Name).Should(Equal(bootKey.Name + "-1"))
+					Expect(previous.GetRevisionId()).Should(Equal(1))
+					Expect(len(previous.GetOwnerReferences())).Should(Equal(1))
+					Expect(previous.Annotations[keys.BootRevisionDiffAnnotationKey]).Should(Equal(""))
+					Expect(previous.Annotations[keys.BootRevisionPhaseAnnotationKey]).Should(Or(Equal(operator.RevisionPhaseComplete), Equal(operator.RevisionPhaseCancel)))
+				}
 			}
 
 			e2eCase.Run()

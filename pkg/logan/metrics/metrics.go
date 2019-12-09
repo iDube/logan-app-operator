@@ -29,11 +29,20 @@ const (
 	// RECONCILE_CREATE_DEPLOYMENT_SUBSTAGE is sub stage to create deployment.
 	RECONCILE_CREATE_DEPLOYMENT_SUBSTAGE = "create_deployment"
 
+	// RECONCILE_CREATE_STATEFULSET_SUBSTAGE is sub stage to create StatefulSet.
+	RECONCILE_CREATE_STATEFULSET_SUBSTAGE = "create_statefulset"
+
 	// RECONCILE_GET_DEPLOYMENT_SUBSTAGE is sub stage to get deployment.
 	RECONCILE_GET_DEPLOYMENT_SUBSTAGE = "get_deployment"
 
+	// RECONCILE_GET_STATEFULSET_SUBSTAGE is sub stage to get statefulset.
+	RECONCILE_GET_STATEFULSET_SUBSTAGE = "get_statefulset"
+
 	// RECONCILE_UPDATE_DEPLOYMENT_SUBSTAGE is sub stage to update deployment.
 	RECONCILE_UPDATE_DEPLOYMENT_SUBSTAGE = "update_deployment"
+
+	// RECONCILE_UPDATE_STATEFULSET_SUBSTAGE is sub stage to update statefulset.
+	RECONCILE_UPDATE_STATEFULSET_SUBSTAGE = "update_statefulset"
 
 	// RECONCILE_CREATE_SERVICE_SUBSTAGE is sub stage to create service.
 	RECONCILE_CREATE_SERVICE_SUBSTAGE = "create_service"

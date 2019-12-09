@@ -83,7 +83,18 @@ type BootSpec struct {
 	Pvc []PersistentVolumeClaimMount `json:"pvc,omitempty" patchStrategy:"merge" patchMergeKey:"name"`
 	// Priority will set the priorityClassName for the boot's workloads, default is ``
 	Priority string `json:"priority,omitempty"`
+	// Workload will set the wordload type for the boot,can be `Deployment` or `StatefulSet`. default is `Deployment`
+	// +kubebuilder:validation:Enum=Deployment;StatefulSet
+	Workload Workload `json:"workload,omitempty"`
 }
+
+// Workload defines the wordload type for the boot
+type Workload string
+
+const (
+	Deployment  Workload = "Deployment"
+	StatefulSet Workload = "StatefulSet"
+)
 
 // BootStatus defines the observed state of Boot for specified types, as JavaBoot/PhpBoot/PythonBoot/NodeJSBoot
 // +k8s:openapi-gen=true
@@ -95,6 +106,7 @@ type BootStatus struct {
 	Type     string `json:"type,omitempty"`
 	Deploy   string `json:"deploy,omitempty"`
 	Services string `json:"services,omitempty"`
+	Workload string `json:"workload,omitempty"`
 }
 
 // PersistentVolumeClaimMount defines the Boot match a PersistentVolumeClaim

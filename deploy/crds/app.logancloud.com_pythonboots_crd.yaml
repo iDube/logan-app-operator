@@ -307,6 +307,13 @@ spec:
             version:
               description: Version is the app container's image version.
               type: string
+            workload:
+              description: Workload will set the wordload type for the boot,can be
+                `Deployment` or `StatefulSet`. default is `Deployment`
+              enum:
+                - Deployment
+                - StatefulSet
+              type: string
           required:
           - image
           - version
@@ -322,7 +329,7 @@ spec:
             type:
               type: string
           type: object
-      type: object
+      #type: object
   version: v1
   versions:
   - name: v1

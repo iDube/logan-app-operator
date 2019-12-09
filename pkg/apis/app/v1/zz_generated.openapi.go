@@ -299,6 +299,13 @@ func schema_pkg_apis_app_v1_BootSpec(ref common.ReferenceCallback) common.OpenAP
 							Format:      "",
 						},
 					},
+					"workload": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Workload will set the wordload type for the boot,can be `Deployment` or `StatefulSet`. default is `Deployment`",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"image", "version"},
 			},
