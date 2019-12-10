@@ -23,13 +23,13 @@ const (
 	HttpPortName = "http"
 )
 
-// DeployLabels return labels for the created Deploy
-func DeployLabels(boot *appv1.Boot) map[string]string {
+// WorkloadLabels return labels for the created Workload
+func WorkloadLabels(boot *appv1.Boot) map[string]string {
 	return map[string]string{"app": "havok", "havok/type": boot.Name}
 }
 
-// DeployName return name for the created Deploy
-func DeployName(boot *appv1.Boot) string {
+// WorkloadName return name for the created Deploy
+func WorkloadName(boot *appv1.Boot) string {
 	return boot.Name
 	//return boot.Name + "-" + boot.BootType
 }

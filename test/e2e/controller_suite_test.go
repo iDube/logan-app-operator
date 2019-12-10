@@ -1449,4 +1449,68 @@ var _ = Describe("Testing Boot controller ", func() {
 			})).Run()
 		})
 	})
+
+	Describe("testing statefulset", func() {
+		Context("test create boot default use statefulset", func() {
+			It("testing create boot default use statefulset", func() {
+				javaBoot.Spec.Workload = bootv1.StatefulSet
+				operatorFramework.CreateBoot(javaBoot)
+
+				boot := operatorFramework.GetBoot(bootKey)
+				Expect(boot.Name).Should(Equal(bootKey.Name))
+
+				sts := operatorFramework.GetStatefulSet(bootKey)
+				operatorFramework.DeleteStatefulSet(sts)
+
+				svr := operatorFramework.GetService(bootKey)
+				operatorFramework.DeleteService(svr)
+			})
+
+			It("testing create boot can not change workload from deployment to statefulset", func() {
+				e2e := &operatorFramework.E2E{
+					Build: func() {
+						operatorFramework.CreateBoot(javaBoot)
+					},
+					Check: func() {
+						boot := operatorFramework.GetBoot(bootKey)
+						Expect(boot.Name).Should(Equal(bootKey.Name))
+
+						deploy := operatorFramework.GetDeployment(bootKey)
+						Expect(deploy.Name).Should(Equal(bootKey.Name))
+					},
+					UpdateAndCheck: func() {
+						boot := operatorFramework.GetBoot(bootKey)
+						boot.Spec.Workload = bootv1.StatefulSet
+						err := operatorFramework.UpdateBootWithError(boot)
+						Expect(err).Should(HaveOccurred())
+					},
+				}
+
+				e2e.Run()
+			})
+
+			It("testing create boot can not change workload from statefulset to deployment", func() {
+				e2e := &operatorFramework.E2E{
+					Build: func() {
+						javaBoot.Spec.Workload = bootv1.StatefulSet
+						operatorFramework.CreateBoot(javaBoot)
+					},
+					Check: func() {
+						boot := operatorFramework.GetBoot(bootKey)
+						Expect(boot.Name).Should(Equal(bootKey.Name))
+
+						sts := operatorFramework.GetStatefulSet(bootKey)
+						Expect(sts.Name).Should(Equal(bootKey.Name))
+					},
+					UpdateAndCheck: func() {
+						boot := operatorFramework.GetBoot(bootKey)
+						boot.Spec.Workload = bootv1.Deployment
+						err := operatorFramework.UpdateBootWithError(boot)
+						Expect(err).Should(HaveOccurred())
+					},
+				}
+				e2e.Run()
+			})
+		})
+	})
 })

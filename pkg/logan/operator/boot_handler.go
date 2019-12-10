@@ -70,15 +70,10 @@ func (handler *BootHandler) UpdateAnnotation(annotationMap map[string]string) bo
 	return updated
 }
 
-// NewDeployment return a new created Boot's Deployment object
-func (handler *BootHandler) NewDeployment() *appsv1.Deployment {
-	logger := handler.Logger
+// NewContainers return the Containers from the boot spec and configmaps
+func (handler *BootHandler) NewContainers() []corev1.Container {
 	boot := handler.Boot
 	bootCfg := handler.Config
-
-	revisionHistoryLimits := int32(defaultRevisionHistoryLimits)
-	podLabels := PodLabels(boot)
-	deployLabels := DeployLabels(boot)
 
 	containers := []corev1.Container{*handler.NewAppContainer()}
 
@@ -93,7 +88,12 @@ func (handler *BootHandler) NewDeployment() *appsv1.Deployment {
 			containers = append(containers, *sideCarContainer)
 		}
 	}
+	return containers
+}
 
+// NewPodAnnotations return the pod's Annotations
+func (handler *BootHandler) NewPodAnnotations() map[string]string {
+	boot := handler.Boot
 	annotations := make(map[string]string)
 	if boot.Annotations != nil {
 		restartAnnotationValue, ok := boot.Annotations[keys.BootRestartedAtAnnotationKey]
@@ -101,6 +101,149 @@ func (handler *BootHandler) NewDeployment() *appsv1.Deployment {
 			annotations[keys.BootRestartedAtAnnotationKey] = restartAnnotationValue
 		}
 	}
+	return annotations
+}
+
+// NewAffinity return the pod's Affinity
+func (handler *BootHandler) NewAffinity() *corev1.Affinity {
+	boot := handler.Boot
+
+	affinity := &corev1.Affinity{
+		PodAntiAffinity: &corev1.PodAntiAffinity{
+			PreferredDuringSchedulingIgnoredDuringExecution: []corev1.WeightedPodAffinityTerm{
+				{
+					Weight: defaultWeight,
+					PodAffinityTerm: corev1.PodAffinityTerm{
+						LabelSelector: &metav1.LabelSelector{
+							MatchExpressions: []metav1.LabelSelectorRequirement{
+								{
+									Key:      keys.BootNameKey,
+									Operator: metav1.LabelSelectorOpIn,
+									Values:   []string{boot.Name},
+								},
+							},
+						},
+						TopologyKey: "kubernetes.io/hostname",
+					},
+				},
+			},
+		}}
+
+	return affinity
+}
+
+// rebuildPodSpec will rebuild the podSpec by boot's PodSpec and the app pvc
+func (handler *BootHandler) rebuildPodSpec(podTemplateSpec *corev1.PodTemplateSpec) {
+	logger := handler.Logger
+	bootCfg := handler.Config
+	boot := handler.Boot
+
+	podSpec := bootCfg.AppSpec.PodSpec
+	if podSpec != nil {
+		appPodSpec := *podSpec.DeepCopy()
+		err := util.MergeOverride(&podTemplateSpec.Spec, appPodSpec)
+		if err != nil {
+			logger.Error(err, "config merge error.", "type", "podSpec")
+		}
+
+		initContainers := podTemplateSpec.Spec.InitContainers
+		if initContainers != nil && len(initContainers) > 0 {
+			for _, c := range initContainers {
+				DecodeEnvs(boot, c.Env)
+			}
+		}
+	}
+
+	//add app pvc
+	if boot.Spec.Pvc != nil && len(boot.Spec.Pvc) > 0 {
+		vols := ConvertVolume(boot.Spec.Pvc)
+		if vols != nil {
+			if podTemplateSpec.Spec.Volumes == nil {
+				podTemplateSpec.Spec.Volumes = make([]corev1.Volume, 0)
+			}
+			podTemplateSpec.Spec.Volumes = append(podTemplateSpec.Spec.Volumes, vols...)
+		}
+	}
+
+	// decode
+	volumes := podTemplateSpec.Spec.Volumes
+	if volumes != nil && len(volumes) > 0 {
+		DecodeVolumes(boot, volumes)
+	}
+
+}
+
+// NewStatefulSet return a new created Boot's StatefulSet object
+func (handler *BootHandler) NewStatefulSet() *appsv1.StatefulSet {
+	boot := handler.Boot
+
+	revisionHistoryLimits := int32(defaultRevisionHistoryLimits)
+
+	podLabels := PodLabels(boot)
+	workloadLabels := WorkloadLabels(boot)
+	containers := handler.NewContainers()
+	annotations := handler.NewPodAnnotations()
+	affinity := handler.NewAffinity()
+
+	sts := &appsv1.StatefulSet{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "apps/v1",
+			Kind:       "StatefulSet",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      WorkloadName(boot),
+			Namespace: boot.Namespace,
+			Labels:    workloadLabels,
+		},
+		Spec: appsv1.StatefulSetSpec{
+			Replicas:             boot.Spec.Replicas,
+			RevisionHistoryLimit: &revisionHistoryLimits,
+			Selector: &metav1.LabelSelector{
+				MatchLabels: podLabels,
+			},
+			Template: corev1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels:      podLabels,
+					Annotations: annotations,
+				},
+				Spec: corev1.PodSpec{
+					Affinity:          affinity,
+					Containers:        containers,
+					NodeSelector:      boot.Spec.NodeSelector,
+					PriorityClassName: boot.Spec.Priority,
+				},
+			},
+			PodManagementPolicy: appsv1.OrderedReadyPodManagement,
+		},
+	}
+
+	partition := int32(0)
+	sts.Spec.UpdateStrategy = appsv1.StatefulSetUpdateStrategy{
+		Type: appsv1.RollingUpdateStatefulSetStrategyType,
+		RollingUpdate: &appsv1.RollingUpdateStatefulSetStrategy{
+			Partition: &partition,
+		},
+	}
+
+	handler.rebuildPodSpec(&sts.Spec.Template)
+
+	_ = controllerutil.SetControllerReference(handler.OperatorBoot, sts, handler.Scheme)
+
+	return sts
+}
+
+// NewDeployment return a new created Boot's Deployment object
+func (handler *BootHandler) NewDeployment() *appsv1.Deployment {
+	boot := handler.Boot
+
+	revisionHistoryLimits := int32(defaultRevisionHistoryLimits)
+	podLabels := PodLabels(boot)
+	deployLabels := WorkloadLabels(boot)
+
+	containers := handler.NewContainers()
+	annotations := handler.NewPodAnnotations()
+
+	affinity := handler.NewAffinity()
 
 	dep := &appsv1.Deployment{
 		TypeMeta: metav1.TypeMeta{
@@ -108,7 +251,7 @@ func (handler *BootHandler) NewDeployment() *appsv1.Deployment {
 			Kind:       "Deployment",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      DeployName(boot),
+			Name:      WorkloadName(boot),
 			Namespace: boot.Namespace,
 			Labels:    deployLabels,
 		},
@@ -124,27 +267,7 @@ func (handler *BootHandler) NewDeployment() *appsv1.Deployment {
 					Annotations: annotations,
 				},
 				Spec: corev1.PodSpec{
-					Affinity: &corev1.Affinity{
-						PodAntiAffinity: &corev1.PodAntiAffinity{
-							PreferredDuringSchedulingIgnoredDuringExecution: []corev1.WeightedPodAffinityTerm{
-								{
-									Weight: defaultWeight,
-									PodAffinityTerm: corev1.PodAffinityTerm{
-										LabelSelector: &metav1.LabelSelector{
-											MatchExpressions: []metav1.LabelSelectorRequirement{
-												{
-													Key:      keys.BootNameKey,
-													Operator: metav1.LabelSelectorOpIn,
-													Values:   []string{boot.Name},
-												},
-											},
-										},
-										TopologyKey: "kubernetes.io/hostname",
-									},
-								},
-							},
-						},
-					},
+					Affinity:          affinity,
 					Containers:        containers,
 					NodeSelector:      boot.Spec.NodeSelector,
 					PriorityClassName: boot.Spec.Priority,
@@ -165,38 +288,7 @@ func (handler *BootHandler) NewDeployment() *appsv1.Deployment {
 		}
 	}
 
-	podSpec := bootCfg.AppSpec.PodSpec
-	if podSpec != nil {
-		appPodSpec := *podSpec.DeepCopy()
-		err := util.MergeOverride(&dep.Spec.Template.Spec, appPodSpec)
-		if err != nil {
-			logger.Error(err, "config merge error.", "type", "podSpec")
-		}
-
-		initContainers := dep.Spec.Template.Spec.InitContainers
-		if initContainers != nil && len(initContainers) > 0 {
-			for _, c := range initContainers {
-				DecodeEnvs(boot, c.Env)
-			}
-		}
-	}
-
-	//add app pvc
-	if boot.Spec.Pvc != nil && len(boot.Spec.Pvc) > 0 {
-		vols := ConvertVolume(boot.Spec.Pvc)
-		if vols != nil {
-			if dep.Spec.Template.Spec.Volumes == nil {
-				dep.Spec.Template.Spec.Volumes = make([]corev1.Volume, 0)
-			}
-			dep.Spec.Template.Spec.Volumes = append(dep.Spec.Template.Spec.Volumes, vols...)
-		}
-	}
-
-	// decode
-	volumes := dep.Spec.Template.Spec.Volumes
-	if volumes != nil && len(volumes) > 0 {
-		DecodeVolumes(boot, volumes)
-	}
+	handler.rebuildPodSpec(&dep.Spec.Template)
 
 	_ = controllerutil.SetControllerReference(handler.OperatorBoot, dep, handler.Scheme)
 
@@ -304,7 +396,7 @@ func (handler *BootHandler) GetHealthProbe() (*corev1.Probe, *corev1.Probe) {
 }
 
 // NewServices returns a new created Service instance
-func (handler *BootHandler) NewServices(dep *appsv1.Deployment) []*corev1.Service {
+func (handler *BootHandler) NewServices(podSpec *corev1.PodTemplateSpec) []*corev1.Service {
 	boot := handler.Boot
 	//bootCfg := handler.Config
 	// app Service
@@ -319,8 +411,8 @@ func (handler *BootHandler) NewServices(dep *appsv1.Deployment) []*corev1.Servic
 	}
 
 	// additional sidecar Service
-	if len(dep.Spec.Template.Spec.Containers) > 1 {
-		sidecarContainers := dep.Spec.Template.Spec.Containers[1:]
+	if len(podSpec.Spec.Containers) > 1 {
+		sidecarContainers := podSpec.Spec.Containers[1:]
 		for _, sidecarContainer := range sidecarContainers {
 			if sidecarContainer.Ports != nil {
 				for _, port := range sidecarContainer.Ports {

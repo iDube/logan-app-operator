@@ -185,7 +185,32 @@ func (handler *BootHandler) DefaultValue() bool {
 
 	pvcChanged := handler.DefaultPvcValue()
 
-	return changed || envChanged || pvcChanged
+	workloadChanged := handler.DefaultWorkload()
+
+	return changed || envChanged || pvcChanged || workloadChanged
+}
+
+// DefaultWorkload will handle the workload changed.
+// Return true if should be updated, false if should not be updated
+func (handler *BootHandler) DefaultWorkload() bool {
+	bootSpec := handler.OperatorSpec
+	changed := false
+
+	workload := bootSpec.Workload
+	if bootSpec.Workload == "" {
+		workload = appv1.Deployment
+	} else if bootSpec.Workload != appv1.Deployment && bootSpec.Workload != appv1.StatefulSet {
+		bootSpec.Workload = appv1.Deployment
+		workload = bootSpec.Workload
+		changed = true
+	}
+
+	annotationMap := map[string]string{
+		keys.WorkloadAnnotationKey: string(workload),
+	}
+	updated := handler.UpdateAnnotation(annotationMap)
+
+	return changed || updated
 }
 
 // DefaultPvcValue will handle the pvc changed.

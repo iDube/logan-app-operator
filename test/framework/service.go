@@ -85,7 +85,7 @@ func UpdateService(svr *corev1.Service) *corev1.Service {
 // DeleteService will delete service from kubernetes
 func DeleteService(svr *corev1.Service) {
 	gomega.Eventually(func() error {
-		return framework.KubeClient.AppsV1().Deployments(svr.Namespace).Delete(svr.Name, &metav1.DeleteOptions{})
+		return framework.KubeClient.CoreV1().Services(svr.Namespace).Delete(svr.Name, &metav1.DeleteOptions{})
 	}, defaultTimeout).
 		Should(gomega.Succeed())
 }

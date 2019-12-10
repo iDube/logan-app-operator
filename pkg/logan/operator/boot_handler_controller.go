@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"github.com/logancloud/logan-app-operator/pkg/logan"
 	loganMetrics "github.com/logancloud/logan-app-operator/pkg/logan/metrics"
-	"github.com/logancloud/logan-app-operator/pkg/logan/util"
 	"github.com/logancloud/logan-app-operator/pkg/logan/util/keys"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/types"
@@ -28,42 +26,15 @@ func (handler *BootHandler) ReconcileCreate() (reconcile.Result, bool, error) {
 	boot := handler.Boot
 	logger := handler.Logger
 	c := handler.Client
-	requeue := false
 
-	depFound := &appsv1.Deployment{}
-	depName := DeployName(boot)
-	err := c.Get(context.TODO(), types.NamespacedName{Name: depName, Namespace: boot.Namespace}, depFound)
-	if err != nil && errors.IsNotFound(err) {
-		if errors.IsNotFound(err) {
-			dep := handler.NewDeployment()
-			logger.Info("Creating Deployment", "deploy containers", dep.Spec.Template.Spec.Containers)
-			err = c.Create(context.TODO(), dep)
-			if err != nil {
-				msg := fmt.Sprintf("Failed to create Deployment: %s", depName)
-				logger.Error(err, msg)
-				loganMetrics.UpdateReconcileErrors(boot.Kind,
-					loganMetrics.RECONCILE_CREATE_STAGE,
-					loganMetrics.RECONCILE_CREATE_DEPLOYMENT_SUBSTAGE,
-					boot.Name)
-				handler.RecordEvent(keys.FailedCreateDeployment, msg, err)
-				return reconcile.Result{}, true, err
-			}
+	// 1. workload
+	podSpec, _, requeue, err := handler.reconcileWorkloadCreate()
 
-			handler.RecordEvent(keys.CreatedDeployment, fmt.Sprintf("Created Deployment: %s", depName), nil)
-			depFound = dep
-			requeue = true
-		} else {
-			msg := fmt.Sprintf("Failed to get Deployment: %s", depName)
-			logger.Error(err, msg)
-			loganMetrics.UpdateReconcileErrors(boot.Kind,
-				loganMetrics.RECONCILE_CREATE_STAGE,
-				loganMetrics.RECONCILE_GET_DEPLOYMENT_SUBSTAGE,
-				boot.Name)
-			handler.RecordEvent(keys.FailedGetDeployment, msg, err)
-			return reconcile.Result{}, true, err
-		}
+	if err != nil {
+		return reconcile.Result{Requeue: true}, true, err
 	}
 
+	// 2. service
 	appSvcFound := &corev1.Service{}
 	appSvcName := boot.Name
 	err = c.Get(context.TODO(), types.NamespacedName{Name: appSvcName, Namespace: boot.Namespace}, appSvcFound)
@@ -73,7 +44,7 @@ func (handler *BootHandler) ReconcileCreate() (reconcile.Result, bool, error) {
 			// need to consider individually in the future
 
 			// Creating all services
-			for _, svc := range handler.NewServices(depFound) {
+			for _, svc := range handler.NewServices(podSpec) {
 				logger.Info("Creating Service", "service", svc.Name)
 				err = c.Create(context.TODO(), svc)
 				if err != nil {
@@ -115,19 +86,8 @@ func (handler *BootHandler) ReconcileUpdate() (reconcile.Result, bool, error) {
 	logger := handler.Logger
 	c := handler.Client
 
-	//1 Deployment
-	depFound := &appsv1.Deployment{}
-	depName := DeployName(boot)
-	err := c.Get(context.TODO(), types.NamespacedName{Name: depName, Namespace: boot.Namespace}, depFound)
-	if err != nil {
-		logger.Error(err, "Failed to get Deployment")
-		loganMetrics.UpdateReconcileErrors(boot.Kind,
-			loganMetrics.RECONCILE_UPDATE_STAGE,
-			loganMetrics.RECONCILE_GET_DEPLOYMENT_SUBSTAGE,
-			boot.Name)
-		return reconcile.Result{Requeue: true}, true, err
-	}
-	result, requeue, err := handler.reconcileUpdateDeploy(depFound)
+	//1 Workload
+	podSpec, result, requeue, err := handler.reconcileWorkloadUpdate()
 	if requeue {
 		return result, true, err
 	}
@@ -148,7 +108,7 @@ func (handler *BootHandler) ReconcileUpdate() (reconcile.Result, bool, error) {
 		logger.Error(err, "Failed to get Service")
 		return reconcile.Result{Requeue: true}, true, err
 	}
-	result, requeue, err = handler.reconcileUpdateService(appSvcFound, depFound)
+	result, requeue, err = handler.reconcileUpdateService(appSvcFound, podSpec)
 	if requeue {
 		return result, true, err
 	}
@@ -156,256 +116,8 @@ func (handler *BootHandler) ReconcileUpdate() (reconcile.Result, bool, error) {
 	return reconcile.Result{}, false, nil
 }
 
-// reconcileUpdateDeploy handle update logic of Deployment
-func (handler *BootHandler) reconcileUpdateDeploy(deploy *appsv1.Deployment) (reconcile.Result, bool, error) {
-	logger := handler.Logger
-	boot := handler.Boot
-	c := handler.Client
-
-	updated := false
-	rebootUpdated := false
-	restartUpdated := false
-
-	reason := "Updating Deployment"
-	// 1. Check ownerReferences
-	ownerReferences := deploy.OwnerReferences
-	if ownerReferences == nil || len(ownerReferences) == 0 {
-		logger.Info(reason, "type", "ownerReferences", "deploy", deploy.Name)
-
-		_ = controllerutil.SetControllerReference(handler.OperatorBoot, deploy, handler.Scheme)
-
-		updated = true
-	}
-
-	// 2. Check size
-	size := boot.Spec.Replicas
-	if *deploy.Spec.Replicas != *size {
-		logger.Info(reason, "type", "replicas", "deploy", deploy.Name,
-			"old", deploy.Spec.Replicas, "new", size)
-		*deploy.Spec.Replicas = *size
-
-		updated = true
-	}
-
-	// "spec.template.spec.containers" is a required value, no need to verify.
-	// 3. Check image and version:
-	deployImg := deploy.Spec.Template.Spec.Containers[0].Image
-	bootImg := AppContainerImageName(handler.Boot, handler.Config.AppSpec)
-	if bootImg != deployImg {
-		logger.Info(reason, "type", "image", "Deploy", deploy.Name,
-			"old", deployImg, "new", bootImg)
-
-		rebootUpdated = true
-	}
-
-	// 4. Check env: check fist container(boot container)
-	deployEnv := deploy.Spec.Template.Spec.Containers[0].Env
-	bootEnv := boot.Spec.Env
-	if !reflect.DeepEqual(deployEnv, bootEnv) {
-		logger.Info(reason, "type", "env", "deploy", deploy.Name,
-			"old", deployEnv, "new", bootEnv)
-
-		rebootUpdated = true
-	}
-
-	// 5. Check port: check fist container(boot container)
-	deployPorts := deploy.Spec.Template.Spec.Containers[0].Ports
-	bootPorts := []corev1.ContainerPort{{
-		Name:          HttpPortName,
-		ContainerPort: boot.Spec.Port,
-		Protocol:      corev1.ProtocolTCP}}
-	if !reflect.DeepEqual(deployPorts, bootPorts) {
-		logger.Info(reason, "type", "port", "deploy", deploy.Name,
-			"old", deployPorts, "new", bootPorts)
-
-		rebootUpdated = true
-	}
-
-	// 6 Check resources: check fist container(boot container)
-	deployResources := deploy.Spec.Template.Spec.Containers[0].Resources
-	bootResources := boot.Spec.Resources
-	if !reflect.DeepEqual(deployResources, bootResources) {
-		logger.Info(reason, "type", "resources", "deploy", deploy.Name,
-			"old", deployResources, "new", bootResources)
-
-		rebootUpdated = true
-	}
-
-	// 7 Check liveness and readiness : check fist container(boot container)
-	// 7.1 Check liveness
-	livenessProbe := deploy.Spec.Template.Spec.Containers[0].LivenessProbe
-	bootHealth := *boot.Spec.Health
-	if bootHealth == "" {
-		if livenessProbe != nil {
-			// Remove the 2 existing probes.
-			deployHealth := livenessProbe.HTTPGet.Path
-			logger.Info(reason, "type", "health", "deploy", deploy.Name,
-				"old", deployHealth, "new", "")
-
-			rebootUpdated = true
-		}
-	} else {
-		if livenessProbe == nil {
-			// 1. If probe is nil, add Liveness and Readiness
-			logger.Info(reason, "type", "health", "deploy", deploy.Name,
-				"old", "empty", "new", bootHealth)
-
-			rebootUpdated = true
-		} else {
-			deployHealth := livenessProbe.HTTPGet.Path
-			// 2. If livenessProbe is not nil, we only need to update the health path
-			if deployHealth != bootHealth {
-				logger.Info(reason, "type", "health", "deploy", deploy.Name,
-					"old", deployHealth, "new", bootHealth)
-
-				rebootUpdated = true
-			}
-		}
-	}
-
-	// 7.2 Check readiness
-	readinessProbe := deploy.Spec.Template.Spec.Containers[0].ReadinessProbe
-	readinessPath := *boot.Spec.Health
-
-	// if boot.Spec.Health is empty, ignore the Readiness
-	if boot.Spec.Readiness != nil && *boot.Spec.Readiness != "" &&
-		boot.Spec.Health != nil && *boot.Spec.Health != "" {
-		readinessPath = *boot.Spec.Readiness
-	}
-
-	if readinessPath == "" {
-		if readinessProbe != nil {
-			// Remove the 2 existing probes.
-			deployHealth := readinessProbe.HTTPGet.Path
-			logger.Info(reason, "type", "readiness", "deploy", deploy.Name,
-				"old", deployHealth, "new", "")
-
-			rebootUpdated = true
-		}
-	} else {
-		if readinessProbe == nil {
-			// 1. If probe is nil, add  Readiness
-			logger.Info(reason, "type", "readiness", "deploy", deploy.Name,
-				"old", "empty", "new", readinessPath)
-
-			rebootUpdated = true
-		} else {
-			deployHealth := readinessProbe.HTTPGet.Path
-			// 2. If readinessProbe is not nil, we only need to update the readiness path
-			if deployHealth != readinessPath {
-				logger.Info(reason, "type", "readiness", "deploy", deploy.Name,
-					"old", deployHealth, "new", readinessPath)
-
-				rebootUpdated = true
-			}
-		}
-	}
-
-	// 8 Check nodeSelector: map[string]string
-	deployNodeSelector := deploy.Spec.Template.Spec.NodeSelector
-	bootNodeSelector := boot.Spec.NodeSelector
-	if !reflect.DeepEqual(deployNodeSelector, bootNodeSelector) {
-		logger.Info(reason, "type", "nodeSelector", "deploy", deploy.Name,
-			"old", deployNodeSelector, "new", bootNodeSelector)
-
-		rebootUpdated = true
-	}
-
-	// 9 Check command
-	deployCommand := deploy.Spec.Template.Spec.Containers[0].Command
-	bootCommand := boot.Spec.Command
-	if !reflect.DeepEqual(deployCommand, bootCommand) {
-		logger.Info(reason, "type", "command", "Deploy", deploy.Name,
-			"old", deployCommand, "new", bootCommand)
-
-		rebootUpdated = true
-	}
-
-	// 10 Check vol
-	deployVols := deploy.Spec.Template.Spec.Containers[0].VolumeMounts
-	bootVolStr, ok := boot.Annotations[keys.BootDeployPvcsAnnotationKey]
-	if ok && bootVolStr != "" {
-		bootVols, err := DecodeVolumeMountVars(bootVolStr)
-		if err != nil {
-			logger.Error(err, "can not decode VolumeMount", "Deploy", deploy.Name,
-				keys.BootDeployPvcsAnnotationKey, bootVolStr)
-			return reconcile.Result{Requeue: true}, true, err
-		}
-
-		if !VolumeMountVarsEq(deployVols, bootVols) {
-			deleted, added, modified := util.DifferenceVol(deployVols, bootVols)
-			logger.Info("Boot VolumeMounts change.", "Deploy", deploy.Name,
-				"deleted", deleted, "added", added, "modified", modified)
-
-			volUpdated, err := handler.checkVolumeMountUpdate(deleted, added, modified)
-			if err != nil {
-				logger.Error(err, "Fail to reconcile VolumeMounts", "Deploy", deploy.Name,
-					"deleted", deleted, "added", added, "modified", modified)
-				return reconcile.Result{Requeue: true}, true, err
-			}
-
-			if volUpdated {
-				logger.Info(reason, "type", "VolumeMounts", "Deploy", deploy.Name,
-					"old", deployVols, "new", bootVols, keys.BootDeployPvcsAnnotationKey, bootVolStr)
-				rebootUpdated = true
-			}
-		}
-	} else if deployVols != nil {
-		// if we have this, is very surprised
-		logger.Info(reason, "type", "VolumeMounts", "Deploy", deploy.Name,
-			"old", deployVols, "new", nil)
-		// rebootUpdated = true
-	}
-
-	// 11 Check RestartedAt
-	if bootRestartedAt, ok := boot.Annotations[keys.BootRestartedAtAnnotationKey]; ok {
-		if deploy.Spec.Template.Annotations == nil {
-			deploy.Spec.Template.Annotations = make(map[string]string)
-		}
-
-		deployRestartedAt, ok := deploy.Spec.Template.Annotations[keys.BootRestartedAtAnnotationKey]
-		if !ok || bootRestartedAt != deployRestartedAt {
-			deploy.Spec.Template.Annotations[keys.BootRestartedAtAnnotationKey] = bootRestartedAt
-			restartUpdated = true
-		}
-	}
-
-	// 12 Check Priority
-	if deploy.Spec.Template.Spec.PriorityClassName != boot.Spec.Priority {
-		logger.Info(reason, "type", "Priority", "deploy", deploy.Name,
-			"old", deploy.Spec.Template.Spec.PriorityClassName, "new", boot.Spec.Priority)
-		rebootUpdated = true
-	}
-
-	if rebootUpdated {
-		updateDeploy := handler.NewDeployment()
-		deploy.Spec = updateDeploy.Spec
-		logger.Info("this update will cause rolling update", "Deploy", deploy.Name)
-	}
-
-	if updated || rebootUpdated || restartUpdated {
-		err := c.Update(context.TODO(), deploy)
-		if err != nil {
-			msg := fmt.Sprintf("Failed to update Deployment: %s", deploy.GetName())
-			logger.Info(msg, "err", err.Error())
-			loganMetrics.UpdateReconcileErrors(boot.Kind,
-				loganMetrics.RECONCILE_UPDATE_STAGE,
-				loganMetrics.RECONCILE_UPDATE_DEPLOYMENT_SUBSTAGE,
-				boot.Name)
-			handler.RecordEvent(keys.FailedUpdateDeployment, msg, err)
-
-			return reconcile.Result{Requeue: true}, true, err
-		}
-
-		handler.RecordEvent(keys.UpdatedDeployment, fmt.Sprintf("Updated Deployment: %s", deploy.GetName()), nil)
-		return reconcile.Result{Requeue: true}, true, nil
-	}
-
-	return reconcile.Result{}, false, nil
-}
-
 // reconcileUpdateService handle update logic/sidecar/nodePort of Service
-func (handler *BootHandler) reconcileUpdateService(svc *corev1.Service, deploy *appsv1.Deployment) (reconcile.Result, bool, error) {
+func (handler *BootHandler) reconcileUpdateService(svc *corev1.Service, podSpec *corev1.PodTemplateSpec) (reconcile.Result, bool, error) {
 	boot := handler.Boot
 	logger := handler.Logger
 	c := handler.Client
@@ -495,7 +207,7 @@ func (handler *BootHandler) reconcileUpdateService(svc *corev1.Service, deploy *
 	}
 
 	//handle update sidecar/nodePort of Service
-	result, requeue, err := handler.reconcileUpdateOtherService(deploy)
+	result, requeue, err := handler.reconcileUpdateOtherService(podSpec)
 	if err != nil {
 		return reconcile.Result{Requeue: true}, true, err
 	}
@@ -553,7 +265,7 @@ func (handler *BootHandler) checkVolumeMountUpdate(deleted, added, modified []co
 }
 
 // reconcileUpdateOtherService handle update sidecar/nodePort of Service
-func (handler *BootHandler) reconcileUpdateOtherService(deploy *appsv1.Deployment) (reconcile.Result, bool, error) {
+func (handler *BootHandler) reconcileUpdateOtherService(podSpec *corev1.PodTemplateSpec) (reconcile.Result, bool, error) {
 	c := handler.Client
 	boot := handler.Boot
 	logger := handler.Logger
@@ -568,7 +280,7 @@ func (handler *BootHandler) reconcileUpdateOtherService(deploy *appsv1.Deploymen
 	}
 
 	updated := false
-	expectSvcs := handler.NewServices(deploy)
+	expectSvcs := handler.NewServices(podSpec)
 	// update or delete  sidecar/nodePort service
 	for _, runtimeSvc := range runtimeSvcs.Items {
 		// skip app service
@@ -742,18 +454,9 @@ func (handler *BootHandler) ReconcileUpdateBootMeta() (reconcile.Result, bool, b
 	boot := handler.Boot
 	c := handler.Client
 
-	// 1. Update Deployment's metadata/annotations if needed
-	depFound := &appsv1.Deployment{}
-	depName := DeployName(boot)
-	err := c.Get(context.TODO(), types.NamespacedName{Name: depName, Namespace: boot.Namespace}, depFound)
-	if err != nil {
-		logger.Error(err, "Failed to get Deployment")
-		loganMetrics.UpdateReconcileErrors(boot.Kind,
-			loganMetrics.RECONCILE_UPDATE_BOOT_META_STAGE,
-			loganMetrics.RECONCILE_GET_DEPLOYMENT_SUBSTAGE,
-			boot.Name)
-		return reconcile.Result{}, true, false, err
-	}
+	// 1. Update Workload's metadata/annotations if needed
+	workloadName := WorkloadName(boot)
+	replicas, currentReplicas, err := handler.getWorkloadStatus()
 
 	// 2. Update Service's metadata/annotations if needed
 	svcList, err := handler.listRuntimeService()
@@ -782,7 +485,7 @@ func (handler *BootHandler) ReconcileUpdateBootMeta() (reconcile.Result, bool, b
 		return reconcile.Result{}, true, false, err
 	}
 
-	runningCount := depFound.Status.Replicas
+	runningCount := replicas
 	//for _, pod := range podList.Items {
 	//	podStatus := pod.Status.Phase
 	//	if podStatus == corev1.PodRunning {
@@ -798,7 +501,7 @@ func (handler *BootHandler) ReconcileUpdateBootMeta() (reconcile.Result, bool, b
 	// 3.2.1 Update Boot's revison's annotation
 	//    set the latest revison's phase to active
 	revisionAnnotationMap := map[string]string{}
-	if runningCount == *boot.Spec.Replicas && runningCount == depFound.Status.AvailableReplicas {
+	if runningCount == *boot.Spec.Replicas && runningCount == currentReplicas {
 		revisionAnnotationMap[keys.BootRevisionPhaseAnnotationKey] = RevisionPhaseActive
 	} else {
 		revisionAnnotationMap[keys.BootRevisionPhaseAnnotationKey] = RevisionPhaseRunning
@@ -830,7 +533,7 @@ func (handler *BootHandler) ReconcileUpdateBootMeta() (reconcile.Result, bool, b
 
 	// 4 Update boot Meta
 	annotationMap := map[string]string{
-		keys.DeployAnnotationKey:          depFound.Name,
+		keys.DeployAnnotationKey:          workloadName,
 		keys.AppTypeAnnotationKey:         keys.AppTypeAnnotationDeploy,
 		keys.ServicesAnnotationKey:        TransferServiceNames(svcList.Items),
 		keys.StatusAvailableAnnotationKey: strconv.Itoa(int(runningCount)),

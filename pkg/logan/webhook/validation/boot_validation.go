@@ -126,6 +126,12 @@ func (vHandler *BootValidator) Validate(req admission.Request) (string, bool, er
 			return msg, false, nil
 		}
 
+		msg, valid = vHandler.validateWorkload(boot, operation)
+		if !valid {
+			logger.Info(msg)
+			return msg, false, nil
+		}
+
 		msg, valid = vHandler.checkPriority(boot, operation)
 		if !valid {
 			logger.Info(msg)
@@ -403,6 +409,24 @@ func (vHandler *BootValidator) CheckPvc(boot *v1.Boot, operation admssionv1beta1
 		}
 	}
 
+	return "", true
+}
+
+func (vHandler *BootValidator) validateWorkload(boot *appv1.Boot, operation admssionv1beta1.Operation) (string, bool) {
+	if operation == admssionv1beta1.Update {
+		workload, found := boot.ObjectMeta.Annotations[keys.WorkloadAnnotationKey]
+		if found {
+			if workload == string(appv1.Deployment) &&
+				(boot.Spec.Workload == "" || boot.Spec.Workload == appv1.Deployment) {
+				return "", true
+			}
+
+			if string(boot.Spec.Workload) != workload {
+				return fmt.Sprintf("The boot %s's workload is a immutable field.Can not change from %s to %s.",
+					boot.Name, workload, boot.Spec.Workload), false
+			}
+		}
+	}
 	return "", true
 }
 
