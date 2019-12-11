@@ -24,6 +24,9 @@ const (
 	// RECONCILE_UPDATE_BOOT_META_STAGE is main stage to update boot's metadata.
 	RECONCILE_UPDATE_BOOT_META_STAGE = "reconcile_update_boot_meta"
 
+	// RECONCILE_UPDATE_BOOT_STATUS_STAGE is main stage to update boot's status.
+	RECONCILE_UPDATE_BOOT_STATUS_STAGE = "reconcile_update_boot_status"
+
 	// Following stages are sub stages
 
 	// RECONCILE_CREATE_DEPLOYMENT_SUBSTAGE is sub stage to create deployment.
@@ -70,6 +73,9 @@ const (
 
 	// RECONCILE_UPDATE_BOOT_META_SUBSTAGE is sub stage to update boot metadata.
 	RECONCILE_UPDATE_BOOT_META_SUBSTAGE = "update_boot_meta"
+
+	// RECONCILE_UPDATE_BOOT_STATUS_SUBSTAGE is sub stage to update boot status.
+	RECONCILE_UPDATE_BOOT_STATUS_SUBSTAGE = "update_boot_status"
 )
 
 var (

@@ -34,6 +34,9 @@ initwebhook-test:
 	scripts/webhook-create-signed-cert.sh --service logan-app-webhook --namespace logan --secret logan-app-operator-webhook
 	cat deploy/webhook.yaml | scripts/webhook-patch-ca-bundle.sh | kubectl create -f -
 
+addlabel:
+	kubectl label namespace logan logan-operator=true --overwrite
+
 initwebhook-dev:
 	scripts/webhook-create-signed-cert.sh --service logan-app-webhook-dev --namespace logan --secret logan-app-operator-webhook-dev
 	cat deploy/webhook-dev.yaml | scripts/webhook-patch-ca-bundle.sh | kubectl create -f -
@@ -97,7 +100,7 @@ test-e2e-local: docker-build
 	bash ./scripts/travis-e2e.sh local
 
 # Init Operator
-initdeploy: initcm initrole initcrd
+initdeploy: addlabel initcm initrole initcrd
 	oc create -f deploy/operator-test.yaml -f deploy/operator-dev.yaml -n logan -f deploy/operator-auto.yaml -n logan
 
 initcm:

@@ -19,7 +19,7 @@ import (
 )
 
 // ReconcileCreate check the existence of components, if not exist, create new one.
-// 1. Deployment not found: Create Deployment, requeue=true
+// 1. Workload not found: Create Workload, requeue=true
 // 2. Service not found: Create Service, requeue=true
 // 3. When creating Error: requeue error requeue=true
 func (handler *BootHandler) ReconcileCreate() (reconcile.Result, bool, error) {
@@ -77,8 +77,8 @@ func (handler *BootHandler) ReconcileCreate() (reconcile.Result, bool, error) {
 }
 
 // ReconcileUpdate check the fields of components, if not as desire, update it.
-// 1. Check Deployment's existence: error -> requeue=true
-// 1.1. Check Deployment's fields: "replicas", image, env, port, resources, health, nodeSelector
+// 1. Check Workload's existence: error -> requeue=true
+// 1.1. Check Workload's fields: "replicas", image, env, port, resources, health, nodeSelector
 // 2. Check Service's existence: error -> requeue=true
 // 2.1 Check Service's fields:
 func (handler *BootHandler) ReconcileUpdate() (reconcile.Result, bool, error) {
@@ -456,7 +456,7 @@ func (handler *BootHandler) ReconcileUpdateBootMeta() (reconcile.Result, bool, b
 
 	// 1. Update Workload's metadata/annotations if needed
 	workloadName := WorkloadName(boot)
-	replicas, currentReplicas, err := handler.getWorkloadStatus()
+	replicas, currentReplicas, _ := handler.getWorkloadStatus()
 
 	// 2. Update Service's metadata/annotations if needed
 	svcList, err := handler.listRuntimeService()

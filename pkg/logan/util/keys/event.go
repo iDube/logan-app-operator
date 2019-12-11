@@ -47,4 +47,9 @@ const (
 	UpdatedBootMeta = "UpdatedBootMeta"
 	// FailedUpdateBootMeta is the failed event reason for updated boot meta
 	FailedUpdateBootMeta = "FailedUpdateBootMeta"
+
+	// UpdatedBootStatus is the event reason for updated boot status
+	UpdatedBootStatus = "UpdatedBootStatus"
+	// FailedUpdateBootStatus is the failed event reason for updated boot Status
+	FailedUpdateBootStatus = "FailedUpdateBootStatus"
 )

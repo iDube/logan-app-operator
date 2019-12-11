@@ -126,6 +126,12 @@ func (vHandler *BootValidator) Validate(req admission.Request) (string, bool, er
 			return msg, false, nil
 		}
 
+		msg, valid = vHandler.validateHpa(boot, operation)
+		if !valid {
+			logger.Info(msg)
+			return msg, false, nil
+		}
+
 		msg, valid = vHandler.validateWorkload(boot, operation)
 		if !valid {
 			logger.Info(msg)
@@ -387,7 +393,6 @@ func (vHandler *BootValidator) BootNameExist(boot *v1.Boot) (string, bool) {
 //    valid: If valid false, otherwise false
 func (vHandler *BootValidator) CheckPvc(boot *v1.Boot, operation admssionv1beta1.Operation) (string, bool) {
 	if boot.Spec.Pvc == nil {
-		logger.Info("Pvc is nil, valid is true.")
 		return "", true
 	}
 
@@ -412,19 +417,40 @@ func (vHandler *BootValidator) CheckPvc(boot *v1.Boot, operation admssionv1beta1
 	return "", true
 }
 
+func (vHandler *BootValidator) validateHpa(boot *appv1.Boot, operation admssionv1beta1.Operation) (string, bool) {
+	if boot.Spec.Hpa != nil {
+
+		if boot.Spec.Hpa.MaxReplicas == nil && boot.Spec.Hpa.MinReplicas != nil {
+			return fmt.Sprintf("If MinReplicas is defined, the boot's HPA MaxReplicas can not be nil."), false
+		}
+
+		if boot.Spec.Hpa.MaxReplicas != nil && boot.Spec.Hpa.MinReplicas != nil {
+			if *boot.Spec.Hpa.MaxReplicas < *boot.Spec.Hpa.MinReplicas {
+				return fmt.Sprintf("The boot's HPA MaxReplicas must be greater than or equal to MinReplicas"), false
+			}
+		}
+		hpaField := field.NewPath("hpa")
+		errLst := util.ValidateMetrics(boot.Spec.Hpa.Metrics, hpaField.Child("metrics"))
+		if len(errLst) > 0 {
+			return fmt.Sprintf("Boot's HPA Metrics validation fails: %s", errLst), false
+		}
+	}
+	return "", true
+}
+
 func (vHandler *BootValidator) validateWorkload(boot *appv1.Boot, operation admssionv1beta1.Operation) (string, bool) {
 	if operation == admssionv1beta1.Update {
-		workload, found := boot.ObjectMeta.Annotations[keys.WorkloadAnnotationKey]
-		if found {
-			if workload == string(appv1.Deployment) &&
-				(boot.Spec.Workload == "" || boot.Spec.Workload == appv1.Deployment) {
-				return "", true
+		if boot.Status.Workload != "" {
+			workload := appv1.Deployment
+			if boot.Spec.Workload != "" {
+				workload = boot.Spec.Workload
 			}
 
-			if string(boot.Spec.Workload) != workload {
+			if boot.Status.Workload != workload {
 				return fmt.Sprintf("The boot %s's workload is a immutable field.Can not change from %s to %s.",
-					boot.Name, workload, boot.Spec.Workload), false
+					boot.Name, boot.Status.Workload, boot.Spec.Workload), false
 			}
+			return "", true
 		}
 	}
 	return "", true

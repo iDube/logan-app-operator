@@ -31,9 +31,10 @@ const (
 
 // BootHandler is the core struct for handling logic for all boots.
 type BootHandler struct {
-	OperatorBoot metav1.Object
-	OperatorSpec *appv1.BootSpec
-	OperatorMeta *metav1.ObjectMeta
+	OperatorBoot   metav1.Object
+	OperatorSpec   *appv1.BootSpec
+	OperatorMeta   *metav1.ObjectMeta
+	OperatorStatus *appv1.BootStatus
 
 	Boot   *appv1.Boot
 	Config *config.BootConfig

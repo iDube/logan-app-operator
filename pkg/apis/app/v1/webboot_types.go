@@ -9,8 +9,13 @@ import (
 // WebBoot is the Schema for the webboots API
 // +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
+// +kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.HPAReplicas,selectorpath=.status.selector
 // +kubebuilder:resource:path=webboots,shortName=web,scope=Namespaced
 // +kubebuilder:printcolumn:name="Desired",type="integer",JSONPath=".spec.replicas",description="Number of desired pods"
+// +kubebuilder:printcolumn:name="ReadyReplicas",type="integer",JSONPath=".status.readyReplicas",description="Number of ready pods"
+// +kubebuilder:printcolumn:name="CurrentReplicas",type="integer",JSONPath=".status.currentReplicas",description="Number of current pods"
+// +kubebuilder:printcolumn:name="Services",type="string",JSONPath=".status.services",description="The service's name of the boot"
+// +kubebuilder:printcolumn:name="Workload",type="string",JSONPath=".status.workload",description="The wordload type for the boot"
 // +kubebuilder:printcolumn:name="Version",type="string",JSONPath=".spec.version",description="The Version of Boot"
 type WebBoot struct {
 	metav1.TypeMeta   `json:",inline"`

@@ -4,8 +4,17 @@ import (
 	appv1 "github.com/logancloud/logan-app-operator/pkg/apis/app/v1"
 	"github.com/logancloud/logan-app-operator/pkg/logan/util"
 	"github.com/logancloud/logan-app-operator/pkg/logan/util/keys"
+	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	corev1 "k8s.io/api/core/v1"
 	"strconv"
+)
+
+const (
+	// DefaultMaxReplicas defined the max replicas for HPA
+	DefaultMaxReplicas = 5
+
+	// DefaultTargetAverageUtilization defined the target average utilization for HPA's CPU metric
+	DefaultTargetAverageUtilization = int32(80)
 )
 
 // DefaultValue will set the default value for CR
@@ -180,14 +189,48 @@ func (handler *BootHandler) DefaultValue() bool {
 			changed = true
 		}
 	}
-
 	envChanged := handler.DefaultEnvValue()
-
 	pvcChanged := handler.DefaultPvcValue()
-
 	workloadChanged := handler.DefaultWorkload()
+	hpaChanged := handler.DefaultHpa()
 
-	return changed || envChanged || pvcChanged || workloadChanged
+	return changed || envChanged || pvcChanged || workloadChanged || hpaChanged
+}
+
+// DefaultHpa will handle the HPA changed.
+// Return true if should be updated, false if should not be updated
+func (handler *BootHandler) DefaultHpa() bool {
+	bootSpec := handler.OperatorSpec
+	changed := false
+	if bootSpec.Hpa != nil {
+		if bootSpec.Hpa.Enable == true {
+			if bootSpec.Hpa.MinReplicas == nil || *bootSpec.Hpa.MinReplicas < 1 {
+				min := int32(handler.Config.AppSpec.Replicas)
+				bootSpec.Hpa.MinReplicas = &min
+				changed = true
+			}
+
+			if bootSpec.Hpa.MaxReplicas == nil || *bootSpec.Hpa.MaxReplicas < 2 {
+				maxReplicas := int32(DefaultMaxReplicas)
+				bootSpec.Hpa.MaxReplicas = &maxReplicas
+				changed = true
+			}
+
+			if len(bootSpec.Hpa.Metrics) == 0 {
+				targetAverageUtilization := DefaultTargetAverageUtilization
+				bootSpec.Hpa.Metrics = []autoscaling.MetricSpec{{
+					Type: autoscaling.ResourceMetricSourceType,
+					Resource: &autoscaling.ResourceMetricSource{
+						Name:                     corev1.ResourceCPU,
+						TargetAverageUtilization: &targetAverageUtilization,
+					},
+				}}
+				changed = true
+			}
+		}
+	}
+
+	return changed
 }
 
 // DefaultWorkload will handle the workload changed.
