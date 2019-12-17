@@ -18,6 +18,13 @@ rules:
     verbs:
       - '*'
   - apiGroups:
+      - autoscaling
+    resources:
+      - horizontalpodautoscalers
+      - horizontalpodautoscalers/status
+    verbs:
+      - '*'
+  - apiGroups:
       - ""
     resources:
       - namespaces

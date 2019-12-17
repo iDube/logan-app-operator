@@ -13,8 +13,8 @@ webhooks:
     name: config.validation.app.logancloud.com
     namespaceSelector:
       matchExpressions:
-        - key: control-plane
-          operator: DoesNotExist
+        - key: logan-operator
+          operator: Exists
     rules:
       - apiGroups:
           - ""

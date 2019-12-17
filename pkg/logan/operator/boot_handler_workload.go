@@ -158,8 +158,6 @@ func (handler *BootHandler) innerReconcileUpdateDeploy(deploy *appsv1.Deployment
 	c := handler.Client
 
 	updated := false
-	rebootUpdated := false
-	restartUpdated := false
 
 	reason := "Updating Deployment"
 	// 1. Check ownerReferences
@@ -244,8 +242,6 @@ func (handler *BootHandler) innerReconcileUpdateStatefulSet(sts *appsv1.Stateful
 	c := handler.Client
 
 	updated := false
-	rebootUpdated := false
-	restartUpdated := false
 
 	reason := "Updating StatefulSet"
 	// 1. Check ownerReferences
@@ -502,14 +498,14 @@ func (handler *BootHandler) reconcilePodTemplateSpecUpdate(podSpec *corev1.PodTe
 	return restartUpdated, rebootUpdated, nil
 }
 
-// getWorkloadStatus will return Replicas and CurrentReplicas
+// getWorkloadStatus will return ReadyReplicas and CurrentReplicas
 func (handler *BootHandler) getWorkloadStatus() (int32, int32, error) {
 	logger := handler.Logger
 	boot := handler.Boot
 	c := handler.Client
 
 	workloadName := WorkloadName(boot)
-	if boot.Spec.Workload == v1.Deployment {
+	if boot.Spec.Workload == v1.Deployment || boot.Spec.Workload == "" {
 		dep := &appsv1.Deployment{}
 		err := c.Get(context.TODO(), types.NamespacedName{Name: workloadName, Namespace: boot.Namespace}, dep)
 		if err != nil {
@@ -520,7 +516,7 @@ func (handler *BootHandler) getWorkloadStatus() (int32, int32, error) {
 				boot.Name)
 			return 0, 0, err
 		}
-		return dep.Status.Replicas, dep.Status.AvailableReplicas, nil
+		return dep.Status.ReadyReplicas, dep.Status.Replicas, nil
 	} else if boot.Spec.Workload == v1.StatefulSet {
 		sts := &appsv1.StatefulSet{}
 		err := c.Get(context.TODO(), types.NamespacedName{Name: workloadName, Namespace: boot.Namespace}, sts)
@@ -532,7 +528,7 @@ func (handler *BootHandler) getWorkloadStatus() (int32, int32, error) {
 				boot.Name)
 			return 0, 0, err
 		}
-		return sts.Status.Replicas, sts.Status.CurrentReplicas, nil
+		return sts.Status.ReadyReplicas, sts.Status.CurrentReplicas, nil
 	}
 
 	//should not execute this

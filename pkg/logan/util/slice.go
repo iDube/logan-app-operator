@@ -1,6 +1,7 @@
 package util
 
 import (
+	autov2beta1 "k8s.io/api/autoscaling/v2beta1"
 	corev1 "k8s.io/api/core/v1"
 	"reflect"
 )
@@ -107,6 +108,83 @@ func DifferenceVol(origin, now []corev1.VolumeMount) (deleted, added, modified [
 					}
 					found = true
 					break
+				}
+			}
+			// String not found. We add it to return slice
+			if !found {
+				if i == 0 {
+					deleted = append(deleted, s1)
+				} else {
+					added = append(added, s1)
+				}
+			}
+		}
+		// Swap the slices, only if it was the first loop
+		if i == 0 {
+			origin, now = now, origin
+		}
+	}
+	return
+}
+
+// DifferenceMetric look like the Difference2 but for MetricSpec
+func DifferenceMetric(origin, now []autov2beta1.MetricSpec) (deleted, added, modified []autov2beta1.MetricSpec) {
+	// Avoid the keys duplicate
+	cMap := make(map[string]string)
+
+	// Loop two times, first to find slice1 strings not in slice2,
+	// second loop to find slice2 strings not in slice1
+	for i := 0; i < 2; i++ {
+		for _, s1 := range origin {
+			found := false
+			for _, s2 := range now {
+				if s1.Type == s2.Type {
+					switch s1.Type {
+					case autov2beta1.ObjectMetricSourceType:
+						if s1.Object.MetricName == s2.Object.MetricName {
+							if !reflect.DeepEqual(s1.Object, s2.Object) {
+								if i == 0 {
+									modified = append(modified, s2)
+								}
+								cMap[string(s1.Type)+"_"+s1.Object.MetricName] = ""
+							}
+							found = true
+						}
+						break
+					case autov2beta1.ExternalMetricSourceType:
+						if s1.External.MetricName == s2.External.MetricName {
+							if !reflect.DeepEqual(s1.External, s2.External) {
+								if i == 0 {
+									modified = append(modified, s2)
+								}
+								cMap[string(s1.Type)+"_"+s1.External.MetricName] = ""
+							}
+							found = true
+						}
+						break
+					case autov2beta1.PodsMetricSourceType:
+						if s1.Pods.MetricName == s2.Pods.MetricName {
+							if !reflect.DeepEqual(s1.Pods, s2.Pods) {
+								if i == 0 {
+									modified = append(modified, s2)
+								}
+								cMap[string(s1.Type)+"_"+s1.Pods.MetricName] = ""
+							}
+							found = true
+						}
+						break
+					case autov2beta1.ResourceMetricSourceType:
+						if s1.Resource.Name == s2.Resource.Name {
+							if !reflect.DeepEqual(s1.Resource, s2.Resource) {
+								if i == 0 {
+									modified = append(modified, s2)
+								}
+								cMap[string(s1.Type)+"_"+string(s1.Resource.Name)] = ""
+							}
+							found = true
+						}
+						break
+					}
 				}
 			}
 			// String not found. We add it to return slice

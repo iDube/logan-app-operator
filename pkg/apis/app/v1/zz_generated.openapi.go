@@ -306,12 +306,18 @@ func schema_pkg_apis_app_v1_BootSpec(ref common.ReferenceCallback) common.OpenAP
 							Format:      "",
 						},
 					},
+					"hpa": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Hpa is the configuration for a horizontal pod autoscaler, which automatically manages the replica count of any resource implementing the scale subresource based on the metrics specified.",
+							Ref:         ref("github.com/logancloud/logan-app-operator/pkg/apis/app/v1.Hpa"),
+						},
+					},
 				},
 				Required: []string{"image", "version"},
 			},
 		},
 		Dependencies: []string{
-			"github.com/logancloud/logan-app-operator/pkg/apis/app/v1.PersistentVolumeClaimMount", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements"},
+			"github.com/logancloud/logan-app-operator/pkg/apis/app/v1.Hpa", "github.com/logancloud/logan-app-operator/pkg/apis/app/v1.PersistentVolumeClaimMount", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements"},
 	}
 }
 
@@ -322,22 +328,60 @@ func schema_pkg_apis_app_v1_BootStatus(ref common.ReferenceCallback) common.Open
 				Description: "BootStatus defines the observed state of Boot for specified types, as JavaBoot/PhpBoot/PythonBoot/NodeJSBoot",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"type": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"deploy": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
 					"services": {
 						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
+							Description: "Services is the service's name of the boot, include app and sidecar",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"workload": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Workload is the wordload type for the boot,can be `Deployment` or `StatefulSet`",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"HPAReplicas": {
+						SchemaProps: spec.SchemaProps{
+							Description: "HPAReplicas the number of non-terminated replicas that are receiving active traffic",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"selector": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Selector that identifies the pods that are receiving active traffic",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"replicas": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Replicas is the number of desired replicas.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"currentReplicas": {
+						SchemaProps: spec.SchemaProps{
+							Description: "CurrentReplicas is the number of current replicas.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"readyReplicas": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ReadyReplicas is the number of ready replicas.",
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+					"revision": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Revision is the revision ID of the boot",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 				},

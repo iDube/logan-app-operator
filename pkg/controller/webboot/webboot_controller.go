@@ -11,6 +11,7 @@ import (
 	"github.com/logancloud/logan-app-operator/pkg/logan/util"
 	"github.com/logancloud/logan-app-operator/pkg/logan/util/keys"
 	appsv1 "k8s.io/api/apps/v1"
+	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -66,7 +67,23 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
+	err = c.Watch(&source.Kind{Type: &appsv1.StatefulSet{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &appv1.WebBoot{},
+	})
+	if err != nil {
+		return err
+	}
+
 	err = c.Watch(&source.Kind{Type: &corev1.Service{}}, &handler.EnqueueRequestForOwner{
+		IsController: true,
+		OwnerType:    &appv1.WebBoot{},
+	})
+	if err != nil {
+		return err
+	}
+
+	err = c.Watch(&source.Kind{Type: &autoscaling.HorizontalPodAutoscaler{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &appv1.WebBoot{},
 	})
@@ -163,7 +180,37 @@ func (r *ReconcileWebBoot) Reconcile(request reconcile.Request) (reconcile.Resul
 		return result, err
 	}
 
-	result, requeue, updated, err := bootHandler.ReconcileUpdateBootMeta()
+	// 3. Handle the update logic of hpa
+	result, err = bootHandler.ReconcileHpa()
+	if result.Requeue || err != nil {
+		return result, err
+	}
+
+	// 4. Handle the update logic of status
+	result, requeue, updated, err := bootHandler.ReconcileUpdateStatus()
+	if updated {
+		logger.Info("Updating Boot Status", "Status", webBoot.Status)
+		err := r.client.Status().Update(context.TODO(), webBoot)
+		if err != nil {
+			msg := "Failed to update Boot Status"
+			logger.Info(msg, "err", err.Error())
+			loganMetrics.UpdateReconcileErrors(bootType,
+				loganMetrics.RECONCILE_UPDATE_BOOT_STATUS_STAGE,
+				loganMetrics.RECONCILE_UPDATE_BOOT_STATUS_SUBSTAGE,
+				webBoot.Name)
+			bootHandler.RecordEvent(keys.FailedUpdateBootStatus, msg, err)
+			return reconcile.Result{Requeue: true}, err
+		}
+
+		bootHandler.RecordEvent(keys.UpdatedBootStatus, "Updated Boot Status", nil)
+		return reconcile.Result{Requeue: true}, nil
+	}
+	if requeue || err != nil {
+		return result, err
+	}
+
+	// 5. Handle the update logic of boot meta
+	result, requeue, updated, err = bootHandler.ReconcileUpdateBootMeta()
 
 	if updated {
 		logger.Info("Updating Boot Meta", "new", webBoot.Annotations)
@@ -178,7 +225,7 @@ func (r *ReconcileWebBoot) Reconcile(request reconcile.Request) (reconcile.Resul
 				webBoot.Name)
 
 			bootHandler.RecordEvent(keys.FailedUpdateBootMeta, msg, err)
-			return reconcile.Result{Requeue: true}, nil
+			return reconcile.Result{Requeue: true}, err
 		}
 		bootHandler.RecordEvent(keys.UpdatedBootMeta, "Updated Boot Meta", nil)
 	}
@@ -203,9 +250,10 @@ func InitHandler(webBoot *appv1.WebBoot, scheme *runtime.Scheme,
 	}
 
 	return &operator.BootHandler{
-		OperatorBoot: webBoot,
-		OperatorSpec: &webBoot.Spec,
-		OperatorMeta: &webBoot.ObjectMeta,
+		OperatorBoot:   webBoot,
+		OperatorSpec:   &webBoot.Spec,
+		OperatorMeta:   &webBoot.ObjectMeta,
+		OperatorStatus: &webBoot.Status,
 
 		Boot:     boot,
 		Config:   bootCfg,

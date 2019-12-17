@@ -49,7 +49,7 @@ const (
 	StatusAvailableAnnotationKey = "app.logancloud.com/status.available"
 	// StatusDesiredAnnotationKey is the annotation key for storing boot's desired pods
 	StatusDesiredAnnotationKey = "app.logancloud.com/status.desired"
-	// StatusModificationTimeAnnotationKey is the annotation key for storing boot's type
+	// StatusModificationTimeAnnotationKey is the annotation key for storing boot's lastUpdateTimeStamp
 	StatusModificationTimeAnnotationKey = "app.logancloud.com/status.lastUpdateTimeStamp"
 
 	// BootRevisionIdAnnotationKey is the annotation key for boot revision's ID

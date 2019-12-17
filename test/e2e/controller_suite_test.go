@@ -39,7 +39,11 @@ var _ = Describe("Testing Boot controller ", func() {
 
 				boot := operatorFramework.GetBoot(bootKey)
 				Expect(boot.Name).Should(Equal(bootKey.Name))
-
+				Expect(boot.Status.Workload).Should(Equal(bootv1.Deployment))
+				Expect(boot.Status.Replicas).Should(Equal(*javaBoot.Spec.Replicas))
+				Expect(boot.Status.CurrentReplicas).Should(Equal(*javaBoot.Spec.Replicas))
+				Expect(boot.Status.ReadyReplicas).Should(Equal(int32(0)))
+				Expect(boot.Status.HPAReplicas).Should(Equal(*javaBoot.Spec.Replicas))
 				deploy := operatorFramework.GetDeployment(bootKey)
 				operatorFramework.DeleteDeployment(deploy)
 
@@ -1458,15 +1462,27 @@ var _ = Describe("Testing Boot controller ", func() {
 
 				boot := operatorFramework.GetBoot(bootKey)
 				Expect(boot.Name).Should(Equal(bootKey.Name))
+				Expect(boot.Status.Workload).Should(Equal(bootv1.StatefulSet))
+				Expect(boot.Status.Replicas).Should(Equal(*javaBoot.Spec.Replicas))
+				Expect(boot.Status.CurrentReplicas).Should(Equal(*javaBoot.Spec.Replicas))
+				Expect(boot.Status.ReadyReplicas).Should(Equal(int32(0)))
+				Expect(boot.Status.HPAReplicas).Should(Equal(*javaBoot.Spec.Replicas))
 
 				sts := operatorFramework.GetStatefulSet(bootKey)
 				operatorFramework.DeleteStatefulSet(sts)
+				Expect(sts.Name).Should(Equal(bootKey.Name))
 
 				svr := operatorFramework.GetService(bootKey)
 				operatorFramework.DeleteService(svr)
+
+				operatorFramework.WaitUpdate(2)
+
+				sts = operatorFramework.GetStatefulSet(bootKey)
+				Expect(sts.Name).Should(Equal(bootKey.Name))
+				svr = operatorFramework.GetService(bootKey)
 			})
 
-			It("testing create boot can not change workload from deployment to statefulset", func() {
+			It("testing update boot can not change workload from deployment to statefulset", func() {
 				e2e := &operatorFramework.E2E{
 					Build: func() {
 						operatorFramework.CreateBoot(javaBoot)

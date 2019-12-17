@@ -108,6 +108,7 @@ set -u
 
 ${sudoCmd} minikube start --kubernetes-version=$KUBERNETES_VERSION --extra-config=apiserver.authorization-mode=RBAC ${registry} ${profile}
 
+${sudoCmd} minikube addons enable metrics-server
 # enable registry to store image on mac virtualbox
 if [ $(uname) == "Darwin" ]; then
     ${sudoCmd} minikube addons enable registry ${profile}

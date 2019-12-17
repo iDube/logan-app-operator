@@ -4,9 +4,23 @@ metadata:
   name: demo-javaboot
 spec:
   # Add fields here
-#  replicas: 1
+  #  replicas: 1
   image: "logancloud/logan-javaboot-sample"
   version: "latest"
+  #workload: StatefulSet
+  #hpa:
+  #  enable: true
+  #  minReplicas: 2
+  #  maxReplicas: 11
+  #  metrics:
+  #  - type: Resource
+  #    resource:
+  #      name: memory
+  #      targetAverageUtilization: 70
+  #  - type: Resource
+  #    resource:
+  #      name: cpu
+  #      targetAverageUtilization: 5
 #  env:
 #    - name: APP_OPTS
 #      value: -Denv=dev

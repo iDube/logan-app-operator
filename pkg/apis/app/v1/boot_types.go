@@ -1,6 +1,7 @@
 package v1
 
 import (
+	autoscaling "k8s.io/api/autoscaling/v2beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -86,13 +87,20 @@ type BootSpec struct {
 	// Workload will set the wordload type for the boot,can be `Deployment` or `StatefulSet`. default is `Deployment`
 	// +kubebuilder:validation:Enum=Deployment;StatefulSet
 	Workload Workload `json:"workload,omitempty"`
+	// Hpa is the configuration for a horizontal pod
+	// autoscaler, which automatically manages the replica count of any resource
+	// implementing the scale subresource based on the metrics specified.
+	// +optional
+	Hpa *Hpa `json:"hpa,omitempty"`
 }
 
 // Workload defines the wordload type for the boot
 type Workload string
 
 const (
-	Deployment  Workload = "Deployment"
+	// Deployment defines the Deployment wordload type
+	Deployment Workload = "Deployment"
+	// StatefulSet defines the StatefulSet wordload type
 	StatefulSet Workload = "StatefulSet"
 )
 
@@ -103,10 +111,31 @@ type BootStatus struct {
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
 	// Add custom validation using kubebuilder tags: https://book.kubebuilder.io/beyond_basics/generating_crd.html
 
-	Type     string `json:"type,omitempty"`
-	Deploy   string `json:"deploy,omitempty"`
+	// Services is the service's name of the boot, include app and sidecar
+	// +optional
 	Services string `json:"services,omitempty"`
-	Workload string `json:"workload,omitempty"`
+	// Workload is the wordload type for the boot,can be `Deployment` or `StatefulSet`
+	// +optional
+	// +kubebuilder:validation:Enum=Deployment;StatefulSet
+	Workload Workload `json:"workload,omitempty"`
+	// HPAReplicas the number of non-terminated replicas that are receiving active traffic
+	// +optional
+	HPAReplicas int32 `json:"HPAReplicas,omitempty"`
+	// Selector that identifies the pods that are receiving active traffic
+	// +optional
+	Selector string `json:"selector,omitempty"`
+	// Replicas is the number of desired replicas.
+	// +optional
+	Replicas int32 `json:"replicas,omitempty"`
+	// CurrentReplicas is the number of current replicas.
+	// +optional
+	CurrentReplicas int32 `json:"currentReplicas,omitempty"`
+	// ReadyReplicas is the number of ready replicas.
+	// +optional
+	ReadyReplicas int32 `json:"readyReplicas,omitempty"`
+	// Revision is the revision ID of the boot
+	// +optional
+	Revision string `json:"revision,omitempty"`
 }
 
 // PersistentVolumeClaimMount defines the Boot match a PersistentVolumeClaim
@@ -124,4 +153,32 @@ type PersistentVolumeClaimMount struct {
 	// not contain ':'.
 	// +kubebuilder:validation:Minimum=1
 	MountPath string `json:"mountPath" protobuf:"bytes,3,opt,name=mountPath"`
+}
+
+type Hpa struct {
+	// Enable is used to define whether HPA are enabled or not
+	// Defaults to false.
+	// +optional
+	Enable bool `json:"enable,omitempty" protobuf:"varint,2,opt,name=enable"`
+	// minReplicas is the lower limit for the number of replicas to which the autoscaler can scale down.
+	// It defaults to 1 pod.
+	// +optional
+	// +kubebuilder:validation:Minimum=1
+	MinReplicas *int32 `json:"minReplicas,omitempty" protobuf:"varint,2,opt,name=minReplicas"`
+	// maxReplicas is the upper limit for the number of replicas to which the autoscaler can scale up.
+	// It cannot be less that minReplicas.
+	// +optional
+	// +kubebuilder:validation:Minimum=2
+	// +kubebuilder:validation:Maximum=100
+	MaxReplicas *int32 `json:"maxReplicas,omitempty" protobuf:"varint,3,opt,name=maxReplicas"`
+	// metrics contains the specifications for which to use to calculate the
+	// desired replica count (the maximum replica count across all metrics will
+	// be used).  The desired replica count is calculated multiplying the
+	// ratio between the target value and the current value by the current
+	// number of pods.  Ergo, metrics used must decrease as the pod count is
+	// increased, and vice-versa.  See the individual metric source types for
+	// more information about how each type of metric must respond.
+	// +optional
+	// +kubebuilder:validation:MinItems=1
+	Metrics []autoscaling.MetricSpec `json:"metrics,omitempty" protobuf:"bytes,4,rep,name=metrics"`
 }
