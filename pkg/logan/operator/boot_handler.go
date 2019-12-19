@@ -214,6 +214,7 @@ func (handler *BootHandler) NewStatefulSet() *appsv1.StatefulSet {
 					PriorityClassName: boot.Spec.Priority,
 				},
 			},
+			ServiceName:         boot.Name,
 			PodManagementPolicy: appsv1.OrderedReadyPodManagement,
 		},
 	}
