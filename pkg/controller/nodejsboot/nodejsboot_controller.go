@@ -145,6 +145,11 @@ func (r *ReconcileNodeJSBoot) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, err
 	}
 
+	if operator.IsDeletedObject(nodejsBoot) {
+		logger.Info("Boot resource has been mark deleted. Ignoring since object must be deleted")
+		return reconcile.Result{}, nil
+	}
+
 	bootHandler = InitHandler(nodejsBoot, r.scheme, r.client, logger, r.recorder)
 
 	//if !logan.MutationDefaulter {

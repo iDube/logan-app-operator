@@ -145,6 +145,11 @@ func (r *ReconcilePhpBoot) Reconcile(request reconcile.Request) (reconcile.Resul
 		return reconcile.Result{}, err
 	}
 
+	if operator.IsDeletedObject(phpBoot) {
+		logger.Info("Boot resource has been mark deleted. Ignoring since object must be deleted")
+		return reconcile.Result{}, nil
+	}
+
 	bootHandler = InitHandler(phpBoot, r.scheme, r.client, logger, r.recorder)
 
 	//if !logan.MutationDefaulter {
