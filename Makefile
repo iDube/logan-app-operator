@@ -79,6 +79,11 @@ gen-k8s:
 # Build
 build: docker-build docker-push
 
+# Build revision recover tools
+build-tools:
+	export GO111MODULE=on
+	go build -i -o ${GOPATH}/src/github.com/logancloud/logan-app-operator/build/_output/bin/logan-revision-recover -gcflags all=-trimpath=${GOPATH} -asmflags all=-trimpath=${GOPATH} github.com/logancloud/logan-app-operator/cmd/tools
+
 # Build the docker image
 docker-build:
 	export GO111MODULE=on && operator-sdk build ${IMG}
