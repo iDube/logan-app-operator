@@ -109,6 +109,11 @@ func (r *ReconcileBootRevision) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
+	if operator.IsDeletedObject(instance) {
+		logger.Info("BootRevision resource has been mark deleted. Ignoring since object must be deleted")
+		return reconcile.Result{}, nil
+	}
+
 	// all ok
 	if instance.OwnerReferences != nil {
 		return reconcile.Result{}, nil

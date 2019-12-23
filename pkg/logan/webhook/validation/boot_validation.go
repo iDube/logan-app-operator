@@ -176,6 +176,10 @@ func (vHandler *BootValidator) recordRevision(inputBoot *v1.Boot, req admission.
 	//if !logan.MutationDefaulter {
 	//	return true, nil
 	//}
+	if operator.IsDeletedObject(inputBoot) {
+		logger.Info("Boot resource has been mark deleted. do not need record a revision", "boot", inputBoot)
+		return true, nil
+	}
 
 	// merge boot's default value from operator's configmap, before record a revision
 	spec, meta := vHandler.mergeBootDefaultValue(inputBoot, req)

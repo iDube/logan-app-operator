@@ -402,5 +402,27 @@ func GetCurrentTimestamp() string {
 	now := metav1.Now()
 	nowBytes, _ := now.MarshalJSON()
 	return string(nowBytes[:])
+}
 
+// IsDeletedObject will determines whether the object has been deleted
+// reference https://github.com/kubernetes/kubernetes/blob/de1cfa9bc16a08116b8f6b56929d3b1ea39fd1e3/staging/src/k8s.io/apimachinery/pkg/api/validation/objectmeta.go#L192
+func IsDeletedObject(object metav1.Object) bool {
+	if object.GetDeletionTimestamp() != nil {
+		return true
+	}
+	finalizers := object.GetFinalizers()
+	if finalizers != nil {
+		hasFinalizerOrphanDependents := false
+		hasFinalizerDeleteDependents := false
+		for _, finalizer := range finalizers {
+			if finalizer == metav1.FinalizerOrphanDependents {
+				hasFinalizerOrphanDependents = true
+			}
+			if finalizer == metav1.FinalizerDeleteDependents {
+				hasFinalizerDeleteDependents = true
+			}
+		}
+		return hasFinalizerDeleteDependents || hasFinalizerOrphanDependents
+	}
+	return false
 }

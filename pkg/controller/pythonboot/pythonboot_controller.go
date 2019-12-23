@@ -145,6 +145,11 @@ func (r *ReconcilePythonBoot) Reconcile(request reconcile.Request) (reconcile.Re
 		return reconcile.Result{}, err
 	}
 
+	if operator.IsDeletedObject(pythonBoot) {
+		logger.Info("Boot resource has been mark deleted. Ignoring since object must be deleted")
+		return reconcile.Result{}, nil
+	}
+
 	bootHandler = InitHandler(pythonBoot, r.scheme, r.client, logger, r.recorder)
 
 	//if !logan.MutationDefaulter {
