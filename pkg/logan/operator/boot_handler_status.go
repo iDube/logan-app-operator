@@ -21,14 +21,18 @@ func (handler *BootHandler) ReconcileUpdateStatus() (reconcile.Result, bool, boo
 	//status
 	// 1. Replicas
 	if bootStatus.Replicas != *bootSpec.Replicas {
+		logger.Info(reason, "type", "status.Replicas",
+			"from", bootStatus.Replicas,
+			"to", *bootSpec.Replicas)
 		bootStatus.Replicas = *bootSpec.Replicas
-		logger.Info(reason, "type", "status.Replicas", "to", bootStatus.Replicas)
 		changed = true
 	}
 
 	if bootStatus.HPAReplicas != *bootSpec.Replicas {
+		logger.Info(reason, "type", "status.HPAReplicas",
+			"from", bootStatus.HPAReplicas,
+			"to", *bootSpec.Replicas)
 		bootStatus.HPAReplicas = *bootSpec.Replicas
-		logger.Info(reason, "type", "status.HPAReplicas", "to", bootStatus.HPAReplicas)
 		changed = true
 	}
 
@@ -37,13 +41,17 @@ func (handler *BootHandler) ReconcileUpdateStatus() (reconcile.Result, bool, boo
 		return reconcile.Result{Requeue: true}, true, changed, err
 	}
 	if bootStatus.ReadyReplicas != readyReplicas {
+		logger.Info(reason, "type", "status.ReadyReplicas",
+			"from", bootStatus.ReadyReplicas,
+			"to", readyReplicas)
 		bootStatus.ReadyReplicas = readyReplicas
-		logger.Info(reason, "type", "status.ReadyReplicas", "to", bootStatus.ReadyReplicas)
 		changed = true
 	}
 	if bootStatus.CurrentReplicas != currentReplicas {
+		logger.Info(reason, "type", "status.CurrentReplicas",
+			"from", bootStatus.CurrentReplicas,
+			"to", currentReplicas)
 		bootStatus.CurrentReplicas = currentReplicas
-		logger.Info(reason, "type", "status.CurrentReplicas", "to", bootStatus.CurrentReplicas)
 		changed = true
 	}
 
@@ -54,8 +62,10 @@ func (handler *BootHandler) ReconcileUpdateStatus() (reconcile.Result, bool, boo
 	})
 
 	if bootStatus.Selector == "" || bootStatus.Selector != selector {
+		logger.Info(reason, "type", "status.Selector",
+			"from", bootStatus.Selector,
+			"to", selector)
 		bootStatus.Selector = selector
-		logger.Info(reason, "type", "status.Selector", "to", bootStatus.Selector)
 		changed = true
 
 	}
@@ -63,15 +73,19 @@ func (handler *BootHandler) ReconcileUpdateStatus() (reconcile.Result, bool, boo
 	// 3. Workload
 	if bootSpec.Workload != "" {
 		if bootStatus.Workload != bootSpec.Workload {
+			logger.Info(reason, "type", "status.Workload",
+				"from", bootStatus.Workload,
+				"to", bootSpec.Workload)
 			bootStatus.Workload = bootSpec.Workload
-			logger.Info(reason, "type", "status.Workload", "to", bootStatus.Workload)
 			changed = true
 		}
 	}
 
 	if bootStatus.Workload == "" {
+		logger.Info(reason, "type", "status.Workload",
+			"from", bootStatus.Workload,
+			"to", appv1.Deployment)
 		bootStatus.Workload = appv1.Deployment
-		logger.Info(reason, "type", "status.Workload", "to", bootStatus.Workload)
 		changed = true
 	}
 
@@ -82,8 +96,10 @@ func (handler *BootHandler) ReconcileUpdateStatus() (reconcile.Result, bool, boo
 	}
 	svcText := TransferServiceNames(svcList.Items)
 	if bootStatus.Services != svcText {
+		logger.Info(reason, "type", "status.Services",
+			"from", bootStatus.Services,
+			"to", svcText)
 		bootStatus.Services = svcText
-		logger.Info(reason, "type", "status.Services", "to", bootStatus.Services)
 		changed = true
 	}
 
@@ -93,8 +109,10 @@ func (handler *BootHandler) ReconcileUpdateStatus() (reconcile.Result, bool, boo
 	if latestRevision != nil {
 		revisionId := strconv.Itoa(latestRevision.GetRevisionId())
 		if bootStatus.Revision != revisionId {
+			logger.Info(reason, "type", "status.Revision",
+				"from", bootStatus.Revision,
+				"to", revisionId)
 			bootStatus.Revision = revisionId
-			logger.Info(reason, "type", "status.Revision", "to", bootStatus.Revision)
 			changed = true
 		}
 	}

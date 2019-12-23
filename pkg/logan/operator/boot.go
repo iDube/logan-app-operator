@@ -9,11 +9,11 @@ import (
 	"github.com/logancloud/logan-app-operator/pkg/logan/config"
 	"github.com/logancloud/logan-app-operator/pkg/logan/util/keys"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
-
-	"k8s.io/apimachinery/pkg/util/intstr"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -101,6 +101,7 @@ func TransferServiceNames(services []corev1.Service) string {
 	for _, service := range services {
 		serviceNames = append(serviceNames, service.Name)
 	}
+	sort.Strings(serviceNames)
 	return strings.Join(serviceNames, ",")
 }
 

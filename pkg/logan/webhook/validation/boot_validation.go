@@ -387,6 +387,68 @@ func (vHandler *BootValidator) BootNameExist(boot *v1.Boot) (string, bool) {
 	return "", true
 }
 
+func (vHandler *BootValidator) getLatest(boot *v1.Boot) (*v1.Boot, error) {
+	c := vHandler.client
+
+	namespaceName := k8stypes.NamespacedName{
+		Namespace: boot.Namespace,
+		Name:      boot.Name,
+	}
+
+	kind := boot.BootType
+	switch kind {
+	case logan.BootJava:
+		rawBoot := &appv1.JavaBoot{}
+		err := c.Get(context.TODO(), namespaceName, rawBoot)
+		if err != nil {
+			return nil, err
+		}
+		return rawBoot.DeepCopyBoot(), nil
+	case logan.BootPython:
+		rawBoot := &appv1.PythonBoot{}
+		err := c.Get(context.TODO(), namespaceName, rawBoot)
+		if err != nil {
+			return nil, err
+		}
+		return rawBoot.DeepCopyBoot(), nil
+	case logan.BootPhp:
+		rawBoot := &appv1.PhpBoot{}
+		err := c.Get(context.TODO(), namespaceName, rawBoot)
+		if err != nil {
+			return nil, err
+		}
+		return rawBoot.DeepCopyBoot(), nil
+	case logan.BootNodeJS:
+		rawBoot := &appv1.NodeJSBoot{}
+		err := c.Get(context.TODO(), namespaceName, rawBoot)
+		if err != nil {
+			return nil, err
+		}
+		return rawBoot.DeepCopyBoot(), nil
+	case logan.BootWeb:
+		rawBoot := &appv1.WebBoot{}
+		err := c.Get(context.TODO(), namespaceName, rawBoot)
+		if err != nil {
+			return nil, err
+		}
+		return rawBoot.DeepCopyBoot(), nil
+	default:
+		return nil, unknowBoot(kind)
+	}
+}
+
+func unknowBoot(kind string) error {
+	return &errors.StatusError{ErrStatus: metav1.Status{
+		Status: metav1.StatusFailure,
+		Code:   http.StatusNotFound,
+		Reason: metav1.StatusReasonNotFound,
+		Details: &metav1.StatusDetails{
+			Name: kind,
+		},
+		Message: fmt.Sprintf("BootType %s not found", kind),
+	}}
+}
+
 // CheckPvc check the boot's pvc, pvc should exist and the label match the boot.
 // Returns
 //    msg: error message
@@ -608,7 +670,7 @@ func (vHandler *BootValidator) CheckEnvKeys(boot *v1.Boot, operation admssionv1b
 	}
 
 	if operation == admssionv1beta1.Update {
-		return checkEnvUpdate(configSpec, boot)
+		return vHandler.checkEnvUpdate(configSpec, boot)
 	}
 
 	return "", true
@@ -652,18 +714,45 @@ func (vHandler *BootValidator) checkSecret(boot *appv1.Boot) (string, bool) {
 	return "", true
 }
 
-// checkEnvUpdate will check the envs is update
-func checkEnvUpdate(configSpec *config.AppSpec, boot *v1.Boot) (string, bool) {
+func (vHandler *BootValidator) getMetaEnvs(boot *v1.Boot) ([]corev1.EnvVar, string, error) {
 	bootMetaEnvs, err := operator.DecodeAnnotationEnvs(boot)
 	if err != nil {
 		logger.Error(err, "Boot's annotation env decode error")
-		return "", true
+		return nil, "Boot's annotation env decode error", err
 	}
 
 	if bootMetaEnvs == nil {
-		// First update(By Controller), or manually deleting the annotation's env.
 		logger.Info("Boot's annotation env decode empty",
 			"namespace", boot.Namespace, "name", boot.Name)
+
+		latestBoot, err := vHandler.getLatest(boot)
+		if err != nil {
+			logger.Error(err, "can not find latest Boot", "boot", boot)
+			return nil, fmt.Sprintf("can not find latest Boot for %s", boot.Name), err
+		}
+		bootMetaEnvs, err := operator.DecodeAnnotationEnvs(latestBoot)
+		if err != nil {
+			logger.Error(err, "Boot's annotation env decode error")
+			return nil, "Boot's annotation env decode error", err
+		}
+		if bootMetaEnvs == nil {
+			logger.Info("lastest Boot's annotation env decode empty",
+				"namespace", boot.Namespace, "name", boot.Name)
+			return nil, "", nil
+		}
+		logger.Info("lastest Boot's annotation env decode isn't empty")
+	}
+	return bootMetaEnvs, "", nil
+}
+
+// checkEnvUpdate will check the envs is update
+func (vHandler *BootValidator) checkEnvUpdate(configSpec *config.AppSpec, boot *v1.Boot) (string, bool) {
+	bootMetaEnvs, msg, err := vHandler.getMetaEnvs(boot)
+	if err != nil {
+		return msg, false
+	}
+
+	if bootMetaEnvs == nil {
 		return "", true
 	}
 

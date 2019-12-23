@@ -63,7 +63,7 @@ func Difference2(origin []corev1.EnvVar, now []corev1.EnvVar) (diff1 []corev1.En
 						cMap[s1.Name] = ""
 					}
 					found = true
-					break
+					//break
 				}
 			}
 			// String not found. We add it to return slice
