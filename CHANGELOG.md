@@ -1,5 +1,15 @@
 # logan-app-operator Release Notes
 
+## Version 0.8.0 - 12/26/2019
+
+* Update operator-sdk to v0.12.0
+* Boot support new workload for StatefulSet
+* Boot support hpa\scale\subresource status
+* Optimize the CRD
+* Optimize logic if the boot is marked for deletion
+* Add a boot revision recover tools
+* Bugfix: webhook env
+* Bugfix: revision rollout
 
 ## Version 0.7.0 - 11/23/2019
 

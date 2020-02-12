@@ -47,16 +47,16 @@ initwebhook-auto:
 
 # Re Install webhook into a cluster
 rewebhook:
-	oc delete -f deploy/webhook.yaml --ignore-not-found=true
-	oc delete secret logan-app-operator-webhook --ignore-not-found=true
+	oc delete -f deploy/webhook.yaml --ignore-not-found=true -n logan
+	oc delete secret logan-app-operator-webhook --ignore-not-found=true -n logan
 	scripts/webhook-create-signed-cert.sh --service logan-app-webhook --namespace logan --secret logan-app-operator-webhook
 	cat deploy/webhook.yaml | scripts/webhook-patch-ca-bundle.sh | kubectl create -f -
-	oc delete -f deploy/webhook-dev.yaml --ignore-not-found=true
-	oc delete secret logan-app-operator-webhook-dev --ignore-not-found=true
+	oc delete -f deploy/webhook-dev.yaml --ignore-not-found=true -n logan
+	oc delete secret logan-app-operator-webhook-dev --ignore-not-found=true -n logan
 	scripts/webhook-create-signed-cert.sh --service logan-app-webhook-dev --namespace logan --secret logan-app-operator-webhook-dev
 	cat deploy/webhook-dev.yaml | scripts/webhook-patch-ca-bundle.sh | kubectl create -f -
-	oc delete -f deploy/webhook-auto.yaml --ignore-not-found=true
-	oc delete secret logan-app-operator-webhook-auto --ignore-not-found=true
+	oc delete -f deploy/webhook-auto.yaml --ignore-not-found=true -n logan
+	oc delete secret logan-app-operator-webhook-auto --ignore-not-found=true -n logan
 	scripts/webhook-create-signed-cert.sh --service logan-app-webhook-auto --namespace logan --secret logan-app-operator-webhook-auto
 	cat deploy/webhook-auto.yaml | scripts/webhook-patch-ca-bundle.sh | kubectl create -f -
 
@@ -106,18 +106,18 @@ test-e2e-local: docker-build
 
 # Init Operator
 initdeploy: addlabel initcm initrole initcrd
-	oc create -f deploy/operator-test.yaml -f deploy/operator-dev.yaml -n logan -f deploy/operator-auto.yaml -n logan
+	oc create -n logan -f deploy/operator-test.yaml -f deploy/operator-dev.yaml -f deploy/operator-auto.yaml
 
 initcm:
-	oc create configmap logan-app-operator-config --from-file=configs/config.yaml
-	oc create configmap logan-app-operator-config-auto --from-file=configs/config.yaml
-	oc create configmap logan-app-operator-config-dev --from-file=configs/config.yaml
+	oc create configmap logan-app-operator-config --from-file=configs/config.yaml -n logan
+	oc create configmap logan-app-operator-config-auto --from-file=configs/config.yaml -n logan
+	oc create configmap logan-app-operator-config-dev --from-file=configs/config.yaml -n logan
 
 initrole:
-	oc apply -f deploy/role.yaml
-	oc apply -f deploy/role_binding.yaml
-	oc apply -f deploy/role_operator.yaml
-	oc apply -f deploy/service_account.yaml
+	oc apply -f deploy/role.yaml -n logan
+	oc apply -f deploy/role_binding.yaml -n logan
+	oc apply -f deploy/role_operator.yaml -n logan
+	oc apply -f deploy/service_account.yaml -n logan
 
 initcrd:
 	oc apply -f deploy/crds/app.logancloud.com_javaboots_crd.yaml
@@ -132,18 +132,18 @@ redeploy: recm rerole recrd
 	oc replace -f deploy/operator-test.yaml -f deploy/operator-dev.yaml -f deploy/operator-auto.yaml -n logan
 
 recm:
-	oc delete configmap logan-app-operator-config --ignore-not-found=true
-	oc create configmap logan-app-operator-config --from-file=configs/config.yaml
-	oc delete configmap logan-app-operator-config-dev --ignore-not-found=true
-	oc create configmap logan-app-operator-config-dev --from-file=configs/config.yaml
-	oc delete configmap logan-app-operator-config-auto --ignore-not-found=true
-	oc create configmap logan-app-operator-config-auto --from-file=configs/config.yaml
+	oc delete configmap logan-app-operator-config --ignore-not-found=true -n logan
+	oc create configmap logan-app-operator-config --from-file=configs/config.yaml -n logan
+	oc delete configmap logan-app-operator-config-dev --ignore-not-found=true -n logan
+	oc create configmap logan-app-operator-config-dev --from-file=configs/config.yaml -n logan
+	oc delete configmap logan-app-operator-config-auto --ignore-not-found=true -n logan
+	oc create configmap logan-app-operator-config-auto --from-file=configs/config.yaml -n logan
 
 rerole:
-	oc replace -f deploy/role.yaml
-	oc replace -f deploy/role_binding.yaml
-	oc replace -f deploy/role_operator.yaml
-	oc replace -f deploy/service_account.yaml
+	oc replace -f deploy/role.yaml -n logan
+	oc replace -f deploy/role_binding.yaml -n logan
+	oc replace -f deploy/role_operator.yaml -n logan
+	oc replace -f deploy/service_account.yaml -n logan
 
 recrd:
 	oc replace -f deploy/crds/app.logancloud.com_javaboots_crd.yaml
@@ -155,44 +155,44 @@ recrd:
 
 # test java
 test-java:
-	oc delete -f examples/test-java.yaml --ignore-not-found=true
-	oc create -f examples/test-java.yaml
+	oc delete -f examples/test-java.yaml --ignore-not-found=true -n logan
+	oc create -f examples/test-java.yaml -n logan
 
 # test php
 test-php:
-	oc delete -f examples/test-php.yaml --ignore-not-found=true
-	oc create -f examples/test-php.yaml
+	oc delete -f examples/test-php.yaml --ignore-not-found=true -n logan
+	oc create -f examples/test-php.yaml -n logan
 
 # test python
 test-python:
-	oc delete -f examples/test-python.yaml --ignore-not-found=true
-	oc create -f examples/test-python.yaml
+	oc delete -f examples/test-python.yaml --ignore-not-found=true -n logan
+	oc create -f examples/test-python.yaml -n logan
 
 # test nodejs
 test-nodejs:
-	oc delete -f examples/test-nodejs.yaml --ignore-not-found=true
-	oc create -f examples/test-nodejs.yaml
+	oc delete -f examples/test-nodejs.yaml --ignore-not-found=true -n logan
+	oc create -f examples/test-nodejs.yaml -n logan
 
 # test web
 test-web:
-	oc delete -f examples/test-web.yaml --ignore-not-found=true
-	oc create -f examples/test-web.yaml
+	oc delete -f examples/test-web.yaml --ignore-not-found=true -n logan
+	oc create -f examples/test-web.yaml -n logan
 
 test-all: test-java test-php test-python test-nodejs test-web
 
 test-deleteall:
-	oc delete -f examples/test-java.yaml --ignore-not-found=true
-	oc delete -f examples/test-php.yaml --ignore-not-found=true
-	oc delete -f examples/test-python.yaml --ignore-not-found=true
-	oc delete -f examples/test-nodejs.yaml --ignore-not-found=true
-	oc delete -f examples/test-web.yaml --ignore-not-found=true
+	oc delete -f examples/test-java.yaml --ignore-not-found=true -n logan
+	oc delete -f examples/test-php.yaml --ignore-not-found=true -n logan
+	oc delete -f examples/test-python.yaml --ignore-not-found=true -n logan
+	oc delete -f examples/test-nodejs.yaml --ignore-not-found=true -n logan
+	oc delete -f examples/test-web.yaml --ignore-not-found=true -n logan
 
 test-createall:
-	oc create -f examples/crds/test_java.yaml
-	oc create -f examples/crds/test_php.yaml
-	oc create -f examples/crds/test_python.yaml
-	oc create -f examples/crds/test_node.yaml
-	oc create -f examples/crds/test_web.yaml
+	oc create -f examples/crds/test_java.yaml -n logan
+	oc create -f examples/crds/test_php.yaml -n logan
+	oc create -f examples/crds/test_python.yaml -n logan
+	oc create -f examples/crds/test_node.yaml -n logan
+	oc create -f examples/crds/test_web.yaml -n logan
 
 #  test recreate 100 times
 test-batch:
