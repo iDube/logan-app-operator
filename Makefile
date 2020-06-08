@@ -120,12 +120,12 @@ initrole:
 	oc apply -f deploy/service_account.yaml -n logan
 
 initcrd:
-	oc apply -f deploy/crds/app.logancloud.com_javaboots_crd.yaml
-	oc apply -f deploy/crds/app.logancloud.com_phpboots_crd.yaml
-	oc apply -f deploy/crds/app.logancloud.com_pythonboots_crd.yaml
-	oc apply -f deploy/crds/app.logancloud.com_nodejsboots_crd.yaml
-	oc apply -f deploy/crds/app.logancloud.com_webboots_crd.yaml
-	oc apply -f deploy/crds/app.logancloud.com_bootrevisions_crd.yaml
+	oc apply -f deploy/crds/v1beta1/app.logancloud.com_javaboots_crd.yaml
+	oc apply -f deploy/crds/v1beta1/app.logancloud.com_phpboots_crd.yaml
+	oc apply -f deploy/crds/v1beta1/app.logancloud.com_pythonboots_crd.yaml
+	oc apply -f deploy/crds/v1beta1/app.logancloud.com_nodejsboots_crd.yaml
+	oc apply -f deploy/crds/v1beta1/app.logancloud.com_webboots_crd.yaml
+	oc apply -f deploy/crds/v1beta1/app.logancloud.com_bootrevisions_crd.yaml
 
 # Redeploy Operator
 redeploy: recm rerole recrd
@@ -146,12 +146,12 @@ rerole:
 	oc replace -f deploy/service_account.yaml -n logan
 
 recrd:
-	oc replace -f deploy/crds/app.logancloud.com_javaboots_crd.yaml
-	oc replace -f deploy/crds/app.logancloud.com_phpboots_crd.yaml
-	oc replace -f deploy/crds/app.logancloud.com_pythonboots_crd.yaml
-	oc replace -f deploy/crds/app.logancloud.com_nodejsboots_crd.yaml
-	oc replace -f deploy/crds/app.logancloud.com_webboots_crd.yaml
-	oc replace -f deploy/crds/app.logancloud.com_bootrevisions_crd.yaml
+	oc replace -f deploy/crds/v1beta1/app.logancloud.com_javaboots_crd.yaml
+	oc replace -f deploy/crds/v1beta1/app.logancloud.com_phpboots_crd.yaml
+	oc replace -f deploy/crds/v1beta1/app.logancloud.com_pythonboots_crd.yaml
+	oc replace -f deploy/crds/v1beta1/app.logancloud.com_nodejsboots_crd.yaml
+	oc replace -f deploy/crds/v1beta1/app.logancloud.com_webboots_crd.yaml
+	oc replace -f deploy/crds/v1beta1/app.logancloud.com_bootrevisions_crd.yaml
 
 # test java
 test-java:

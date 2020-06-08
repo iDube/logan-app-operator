@@ -41,7 +41,7 @@ func main() {
 		log.Error(err, "failed to setup framework: %v\n")
 		os.Exit(1)
 	}
-	targetNamespace, err := framework.KubeClient.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+	targetNamespace, err := framework.KubeClient.CoreV1().Namespaces().Get(context.TODO(), namespace, metav1.GetOptions{})
 	if err != nil {
 		if errors.IsNotFound(err) {
 			log.Error(err, "can not find namesapce", "namespace", namespace)

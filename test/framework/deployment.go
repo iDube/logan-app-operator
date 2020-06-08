@@ -1,6 +1,7 @@
 package framework
 
 import (
+	"context"
 	"github.com/onsi/gomega"
 	appsv1 "k8s.io/api/apps/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -14,7 +15,8 @@ func CreateDeployment(dep *appsv1.Deployment) *appsv1.Deployment {
 	deploy := &appsv1.Deployment{}
 	var err error
 	gomega.Eventually(func() error {
-		deploy, err = framework.KubeClient.AppsV1().Deployments(dep.Namespace).Create(dep)
+		deploy, err = framework.KubeClient.AppsV1().Deployments(dep.Namespace).
+			Create(context.TODO(), dep, metav1.CreateOptions{})
 		return err
 	}, defaultTimeout).
 		Should(gomega.Succeed())
@@ -27,7 +29,8 @@ func CreateDeploymentWithError(dep *appsv1.Deployment) (*appsv1.Deployment, erro
 	deploy := &appsv1.Deployment{}
 	var err error
 	gomega.Eventually(func() error {
-		deploy, err = framework.KubeClient.AppsV1().Deployments(dep.Namespace).Create(dep)
+		deploy, err = framework.KubeClient.AppsV1().Deployments(dep.Namespace).
+			Create(context.TODO(), dep, metav1.CreateOptions{})
 		return err
 	}, defaultTimeout).
 		ShouldNot(gomega.Succeed())
@@ -40,7 +43,8 @@ func GetDeployment(nn types.NamespacedName) *appsv1.Deployment {
 	deploy := &appsv1.Deployment{}
 	var err error
 	gomega.Eventually(func() error {
-		deploy, err = framework.KubeClient.AppsV1().Deployments(nn.Namespace).Get(nn.Name, metav1.GetOptions{})
+		deploy, err = framework.KubeClient.AppsV1().Deployments(nn.Namespace).
+			Get(context.TODO(), nn.Name, metav1.GetOptions{})
 		return err
 	}, defaultTimeout).
 		Should(gomega.Succeed())
@@ -54,7 +58,8 @@ func UpdateDeployment(dep *appsv1.Deployment) *appsv1.Deployment {
 	gomega.Eventually(func() error {
 		latest := GetDeployment(types.NamespacedName{Namespace: dep.Namespace, Name: dep.Name})
 		latest.Spec = dep.Spec
-		deploy, err = framework.KubeClient.AppsV1().Deployments(dep.Namespace).Update(latest)
+		deploy, err = framework.KubeClient.AppsV1().Deployments(dep.Namespace).
+			Update(context.TODO(), latest, metav1.UpdateOptions{})
 		if apierrors.IsConflict(err) {
 			log.Printf("failed to update object, got an Conflict error: ")
 		}
@@ -71,7 +76,8 @@ func UpdateDeployment(dep *appsv1.Deployment) *appsv1.Deployment {
 // DeleteDeployment will delete specific deployment from kubernetes
 func DeleteDeployment(dep *appsv1.Deployment) {
 	gomega.Eventually(func() error {
-		return framework.KubeClient.AppsV1().Deployments(dep.Namespace).Delete(dep.Name, &metav1.DeleteOptions{})
+		return framework.KubeClient.AppsV1().Deployments(dep.Namespace).
+			Delete(context.TODO(), dep.Name, metav1.DeleteOptions{})
 	}, defaultTimeout).
 		Should(gomega.Succeed())
 }

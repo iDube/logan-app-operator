@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"context"
 	"fmt"
 	ghodssyaml "github.com/ghodss/yaml"
 	bootv1 "github.com/logancloud/logan-app-operator/pkg/apis/app/v1"
@@ -618,7 +619,8 @@ var _ = Describe("Testing Webhook", func() {
 				Update: func() {
 					configmap := operatorFramework.GetConfigmap(configNN)
 					delete(configmap.Data, "config.yaml")
-					_, err := framework.KubeClient.CoreV1().ConfigMaps(configmap.Namespace).Update(configmap)
+					_, err := framework.KubeClient.CoreV1().ConfigMaps(configmap.Namespace).
+						Update(context.TODO(), configmap, metav1.UpdateOptions{})
 					Expect(err).Should(HaveOccurred())
 				},
 			})).Run()
@@ -629,7 +631,8 @@ var _ = Describe("Testing Webhook", func() {
 				Update: func() {
 					configmap := operatorFramework.GetConfigmap(configNN)
 					configmap.Data["config.yaml"] = ""
-					_, err := framework.KubeClient.CoreV1().ConfigMaps(configmap.Namespace).Update(configmap)
+					_, err := framework.KubeClient.CoreV1().ConfigMaps(configmap.Namespace).
+						Update(context.TODO(), configmap, metav1.UpdateOptions{})
 					Expect(err).Should(HaveOccurred())
 				},
 			})).Run()
@@ -639,7 +642,8 @@ var _ = Describe("Testing Webhook", func() {
 				Update: func() {
 					configmap := operatorFramework.GetConfigmap(configNN)
 					configmap.Data["config.yaml"] = "{xx:123,}"
-					_, err := framework.KubeClient.CoreV1().ConfigMaps(configmap.Namespace).Update(configmap)
+					_, err := framework.KubeClient.CoreV1().ConfigMaps(configmap.Namespace).
+						Update(context.TODO(), configmap, metav1.UpdateOptions{})
 					Expect(err).Should(HaveOccurred())
 				},
 			})).Run()

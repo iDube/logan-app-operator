@@ -7,7 +7,6 @@ import (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // PythonBoot is the Schema for the pythonboots API
-// +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
 // +kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.HPAReplicas,selectorpath=.status.selector
 // +kubebuilder:resource:path=pythonboots,shortName=python,scope=Namespaced
