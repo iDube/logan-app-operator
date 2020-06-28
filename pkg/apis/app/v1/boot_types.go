@@ -9,7 +9,6 @@ import (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // Boot is the common Schema for the all boot types API
-// +k8s:openapi-gen=true
 type Boot struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -26,7 +25,6 @@ type Boot struct {
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // BootSpec defines the desired state of Boot for specified types, as JavaBoot/PhpBoot/PythonBoot/NodeJSBoot
-// +k8s:openapi-gen=true
 type BootSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
@@ -62,7 +60,7 @@ type BootSpec struct {
 	// +kubebuilder:validation:MaxLength=2048
 	Readiness *string `json:"readiness,omitempty"`
 	// Prometheus will scrape metrics from the service, default is `true`
-	// +kubebuilder:validation:Enum=true;false
+	// +kubebuilder:validation:Enum="true";"false";""
 	Prometheus string `json:"prometheus,omitempty"`
 	// Resources is the compute resource requirements for the app container
 	Resources corev1.ResourceRequirements `json:"resources,omitempty"`
@@ -105,7 +103,6 @@ const (
 )
 
 // BootStatus defines the observed state of Boot for specified types, as JavaBoot/PhpBoot/PythonBoot/NodeJSBoot
-// +k8s:openapi-gen=true
 type BootStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "operator-sdk generate k8s" to regenerate code after modifying this file
@@ -139,11 +136,10 @@ type BootStatus struct {
 }
 
 // PersistentVolumeClaimMount defines the Boot match a PersistentVolumeClaim
-// +k8s:openapi-gen=true
 type PersistentVolumeClaimMount struct {
 	// This must match the Name of a PersistentVolumeClaim.
-	// +kubebuilder:validation:Minimum=1
-	// +kubebuilder:validation:Maximum=63
+	// +kubebuilder:validation:MinLength=1
+	// +kubebuilder:validation:MaxLength=63
 	Name string `json:"name" protobuf:"bytes,1,opt,name=name"`
 	// Mounted read-only if true, read-write otherwise (false or unspecified).
 	// Defaults to false.
@@ -151,7 +147,7 @@ type PersistentVolumeClaimMount struct {
 	ReadOnly bool `json:"readOnly,omitempty" protobuf:"varint,2,opt,name=readOnly"`
 	// Path within the container at which the volume should be mounted.  Must
 	// not contain ':'.
-	// +kubebuilder:validation:Minimum=1
+	// +kubebuilder:validation:MinLength=1
 	MountPath string `json:"mountPath" protobuf:"bytes,3,opt,name=mountPath"`
 }
 

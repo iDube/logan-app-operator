@@ -7,7 +7,6 @@ import (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // JavaBoot is the Schema for the javaboots API
-// +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
 // +kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.HPAReplicas,selectorpath=.status.selector
 // +kubebuilder:resource:path=javaboots,shortName=java,scope=Namespaced

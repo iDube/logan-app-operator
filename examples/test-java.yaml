@@ -7,6 +7,7 @@ spec:
   #  replicas: 1
   image: "logancloud/logan-javaboot-sample"
   version: "latest"
+  #prometheus: "true"
   #workload: StatefulSet
   #hpa:
   #  enable: true

@@ -2,7 +2,6 @@ package framework
 
 import (
 	"github.com/logancloud/logan-app-operator/pkg/apis"
-	"github.com/operator-framework/operator-sdk/pkg/restmapper"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -52,8 +51,7 @@ func New() (*Framework, error) {
 		return nil, errors.Wrap(err, "creating http-client failed")
 	}
 	mgr, err := manager.New(kubeconfig, manager.Options{
-		Namespace:      "",
-		MapperProvider: restmapper.NewDynamicRESTMapper,
+		Namespace: "",
 	})
 
 	if err != nil {

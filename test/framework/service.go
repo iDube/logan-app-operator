@@ -1,6 +1,7 @@
 package framework
 
 import (
+	"context"
 	"github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -14,7 +15,8 @@ func CreateService(svr *corev1.Service) *corev1.Service {
 	service := &corev1.Service{}
 	var err error
 	gomega.Eventually(func() error {
-		service, err = framework.KubeClient.CoreV1().Services(svr.Namespace).Create(svr)
+		service, err = framework.KubeClient.CoreV1().Services(svr.Namespace).
+			Create(context.TODO(), svr, metav1.CreateOptions{})
 		return err
 	}, defaultTimeout).
 		Should(gomega.Succeed())
@@ -27,7 +29,8 @@ func CreateServiceWithError(svr *corev1.Service) (*corev1.Service, error) {
 	service := &corev1.Service{}
 	var err error
 	gomega.Eventually(func() error {
-		service, err = framework.KubeClient.CoreV1().Services(svr.Namespace).Create(svr)
+		service, err = framework.KubeClient.CoreV1().Services(svr.Namespace).
+			Create(context.TODO(), svr, metav1.CreateOptions{})
 		return err
 	}, defaultTimeout).
 		ShouldNot(gomega.Succeed())
@@ -40,7 +43,8 @@ func GetService(nn types.NamespacedName) *corev1.Service {
 	service := &corev1.Service{}
 	var err error
 	gomega.Eventually(func() error {
-		service, err = framework.KubeClient.CoreV1().Services(nn.Namespace).Get(nn.Name, metav1.GetOptions{})
+		service, err = framework.KubeClient.CoreV1().Services(nn.Namespace).
+			Get(context.TODO(), nn.Name, metav1.GetOptions{})
 		return err
 	}, defaultTimeout).
 		Should(gomega.Succeed())
@@ -53,7 +57,8 @@ func GetServiceWithError(nn types.NamespacedName) (*corev1.Service, error) {
 	service := &corev1.Service{}
 	var err error
 	gomega.Eventually(func() error {
-		service, err = framework.KubeClient.CoreV1().Services(nn.Namespace).Get(nn.Name, metav1.GetOptions{})
+		service, err = framework.KubeClient.CoreV1().Services(nn.Namespace).
+			Get(context.TODO(), nn.Name, metav1.GetOptions{})
 		return err
 	}, defaultTimeout).
 		ShouldNot(gomega.Succeed())
@@ -68,7 +73,8 @@ func UpdateService(svr *corev1.Service) *corev1.Service {
 	gomega.Eventually(func() error {
 		latest := GetService(types.NamespacedName{Name: svr.Name, Namespace: svr.Namespace})
 		latest.Spec = svr.Spec
-		service, err = framework.KubeClient.CoreV1().Services(svr.Namespace).Update(latest)
+		service, err = framework.KubeClient.CoreV1().Services(svr.Namespace).
+			Update(context.TODO(), latest, metav1.UpdateOptions{})
 		if apierrors.IsConflict(err) {
 			log.Printf("failed to update object, got an Conflict error: ")
 		}
@@ -85,7 +91,8 @@ func UpdateService(svr *corev1.Service) *corev1.Service {
 // DeleteService will delete service from kubernetes
 func DeleteService(svr *corev1.Service) {
 	gomega.Eventually(func() error {
-		return framework.KubeClient.CoreV1().Services(svr.Namespace).Delete(svr.Name, &metav1.DeleteOptions{})
+		return framework.KubeClient.CoreV1().Services(svr.Namespace).
+			Delete(context.TODO(), svr.Name, metav1.DeleteOptions{})
 	}, defaultTimeout).
 		Should(gomega.Succeed())
 }

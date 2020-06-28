@@ -7,7 +7,6 @@ import (
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // NodeJSBoot is the Schema for the nodejsboots API
-// +k8s:openapi-gen=true
 // +kubebuilder:subresource:status
 // +kubebuilder:subresource:scale:specpath=.spec.replicas,statuspath=.status.HPAReplicas,selectorpath=.status.selector
 // +kubebuilder:resource:path=nodejsboots,shortName=nodejs,scope=Namespaced
