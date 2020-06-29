@@ -2,6 +2,7 @@ apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
 metadata:
   name: logan-app-webhook-validation-dev
+  namespace: logan
 webhooks:
   - clientConfig:
       caBundle: ${CA_BUNDLE}
@@ -58,6 +59,7 @@ apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
 metadata:
   name: logan-app-webhook-mutation-dev
+  namespace: logan
 webhooks:
   - clientConfig:
       caBundle: ${CA_BUNDLE}

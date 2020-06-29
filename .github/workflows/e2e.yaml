@@ -1,0 +1,108 @@
+name: "Logan-app-operator E2E"
+on: [pull_request, push]
+
+jobs:
+  E2E:
+    name: E2E
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        TEST_SUITE:
+          - testsuite-1
+          - testsuite-2
+          - testsuite-3
+          - testsuite-4
+          - testsuite-5
+          - testsuite-6
+          - testsuite-7
+    steps:
+      - name: Init
+        run: |
+          export START_TIME=$(date -u +%s)
+          echo "::set-env name=START_TIME::$START_TIME"
+          export CI_STATUS=succeeded
+          echo "::set-env name=CI_STATUS::$CI_STATUS"
+      - name: Set up Go 1.14
+        uses: actions/setup-go@78bd24e # v2.0.3
+        with:
+          go-version: 1.14.4
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@28c7f3d # v2.3.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: go/src/github.com/logancloud/logan-app-operator
+
+      - name: Building Repo
+        run: |
+          # workaround for https://github.com/actions/setup-go/issues/14
+          export GOPATH=${GITHUB_WORKSPACE}/go
+          export PATH=$PATH:$GOPATH/bin
+          make travis-docker-build
+        working-directory: ${{ github.workspace }}/go/src/github.com/logancloud/logan-app-operator
+
+      - name: Set up Kind for K8S 1.12
+        uses: engineerd/setup-kind@4e17476 # v0.4.0
+        with:
+          version: "v0.8.1"
+          image: "kindest/node:v1.12.10"
+
+      - name: E2E-Testing Preparing
+        run: |
+          # init
+          kubectl create namespace logan
+          make initdeploy
+          make initwebhook-test
+          make initwebhook-dev
+          # use e2e images
+          export REPO="logancloud/logan-app-operator"
+          docker tag ${REPO}:latest "${REPO}:latest-e2e"
+          kind load docker-image "${REPO}:latest-e2e"
+          kubectl patch -n logan deployments logan-app-operator -p '{"spec":{"replicas":1,"template":{"spec":{"containers":[{"name":"logan-app-operator","imagePullPolicy":"IfNotPresent","image":"logancloud/logan-app-operator:latest-e2e"}]}}}}'
+          JSONPATH='{range .items[*]}{@.metadata.name}:{range @.status.conditions[*]}{@.type}={@.status};{end}{end}'; until kubectl -n logan get pods -lname=logan-app-operator -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 1;echo "waiting for logan-app-operator to be available"; kubectl get pods --all-namespaces; done
+          kubectl patch -n logan deployments logan-app-operator-dev -p '{"spec":{"replicas":1,"template":{"spec":{"containers":[{"name":"logan-app-operator","imagePullPolicy":"IfNotPresent","image":"logancloud/logan-app-operator:latest-e2e"}]}}}}'
+          until kubectl -n logan get pods -lname=logan-app-operator-dev -o jsonpath="$JSONPATH" 2>&1 | grep -q "Ready=True"; do sleep 1;echo "waiting for logan-app-operator-dev to be available"; kubectl get pods --all-namespaces; done
+          # use e2e config
+          kubectl apply -f test/resources/config.yaml
+          # install e2e tools
+          go get -u github.com/onsi/ginkgo/ginkgo
+        working-directory: ${{ github.workspace }}/go/src/github.com/logancloud/logan-app-operator
+
+      - name: E2E-Testing Runing - ${{ matrix.TEST_SUITE }}
+        run: |
+          # Run E2E
+          export TEST_SUITE=${{ matrix.TEST_SUITE }}
+          echo $TEST_SUITE
+          make e2e
+        working-directory: ${{ github.workspace }}/go/src/github.com/logancloud/logan-app-operator
+
+      - name: Collect information
+        run: |
+          if [[ ${CI_RES} != 0 ]]; then
+            echo "::set-env name=CI_STATUS::failed"
+          fi
+          now=$(date -u +%s)
+          elapsed_seconds=`expr $now - $START_TIME`
+          echo "::set-env name=CI_ELAPSED_SECONDS::$elapsed_seconds"
+          array=(`echo "${{ github.ref }}" | tr '/' ' '` )
+          echo "::set-env name=BRANCH::${array[-1]}"
+      - name: Send dingding notify
+        uses: zcong1993/actions-ding@42205cb # v3.0.0
+        with:
+          dingToken: ${{ secrets.DING_TOKEN }}
+          secret: ${{ secrets.DING_SECRET }}
+          body: |
+            {
+              "msgtype": "markdown",
+              "markdown": {
+                  "text": "## ${{ env.CI_STATUS }} to build logan-app-operator  \n Build [action:${{ matrix.TEST_SUITE }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) on ${{ env.BRANCH }} \n elapsed ${{ env.CI_ELAPSED_SECONDS }} seconds \n> ###### By ${{ github.actor }} \n",
+                  "title": "logan-app-operator github action info"
+              }
+            }
+      - name: Clean
+        run: |
+          if [[ ${CI_RES} != 0 ]]; then
+            exit -1
+          fi
