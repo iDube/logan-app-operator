@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: logan-app-operator-auto
+  namespace: logan
 spec:
   replicas: 0
   selector:
