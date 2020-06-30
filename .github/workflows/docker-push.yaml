@@ -1,0 +1,56 @@
+name: "Logan-app-operator publish"
+on: push
+
+jobs:
+  docker:
+    name: docker
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Go 1.14
+        uses: actions/setup-go@78bd24e # v2.0.3
+        with:
+          go-version: 1.14.4
+        id: go
+
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@28c7f3d # v2.3.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: go/src/github.com/logancloud/logan-app-operator
+
+      - name: Building Repo And Docker Push
+        env:
+          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        run: |
+          # workaround for https://github.com/actions/setup-go/issues/14
+          export GOPATH=${GITHUB_WORKSPACE}/go
+          export PATH=$PATH:$GOPATH/bin
+          make travis-docker-build
+
+          array=(`echo "${{ github.ref }}" | tr '/' ' '` )
+          export BRANCH=${array[-1]}
+          export TAG=${array[-1]}
+          if [[ ${BRANCH} == "master" ]]; then
+            export TAG=latest
+          fi
+          echo "::set-env name=TAG::$TAG"
+          echo "::set-env name=BRANCH::$BRANCH"
+
+          make ci-push
+        working-directory: ${{ github.workspace }}/go/src/github.com/logancloud/logan-app-operator
+
+      - name: Send dingding notify
+        uses: zcong1993/actions-ding@42205cb # v3.0.0
+        with:
+          dingToken: ${{ secrets.DING_TOKEN }}
+          secret: ${{ secrets.DING_SECRET }}
+          body: |
+            {
+              "msgtype": "markdown",
+              "markdown": {
+                  "text": "## succeeded to build docker image logan-app-operator:${{ env.TAG }}   \n Build [workflow:${{ github.workflow }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) on ${{ env.BRANCH }} \n> ###### By ${{ github.actor }} \n",
+                  "title": "logan-app-operator github action info"
+              }
+            }
