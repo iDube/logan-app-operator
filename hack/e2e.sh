@@ -11,7 +11,7 @@ set -x
 function runTest()
 {
 
-    declare -A map=(['name']='tom' ['age']='15')
+    declare -A map
     map["testsuite-1"]="ginkgo --focus=\"\[Revision\]\" -skip=\"\[Slow\]|\[Serial\]\" -r test"
     map["testsuite-2"]="ginkgo --focus=\"\[CRD\]\" -skip=\"\[Slow\]|\[Serial\]\" -r test"
     map["testsuite-3"]="ginkgo --focus=\"\[CONTROLLER-1\]\" -skip=\"\[Slow\]|\[Serial\]\" -r test"

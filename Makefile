@@ -101,6 +101,9 @@ travis-build:
 e2e:
 	bash ./hack/e2e.sh
 
+ci-push:
+	bash ./hack/docker-push.sh
+
 test-e2e:
 	bash ./scripts/travis-e2e.sh
 

@@ -1,5 +1,8 @@
 name: "Logan-app-operator E2E"
-on: [pull_request, push]
+on:
+  pull_request:
+    branches:
+      - master
 
 jobs:
   E2E:
@@ -86,18 +89,18 @@ jobs:
           now=$(date -u +%s)
           elapsed_seconds=`expr $now - $START_TIME`
           echo "::set-env name=CI_ELAPSED_SECONDS::$elapsed_seconds"
-          array=(`echo "${{ github.ref }}" | tr '/' ' '` )
-          echo "::set-env name=BRANCH::${array[-1]}"
       - name: Send dingding notify
         uses: zcong1993/actions-ding@42205cb # v3.0.0
         with:
-          dingToken: ${{ secrets.DING_TOKEN }}
-          secret: ${{ secrets.DING_SECRET }}
+          #dingToken: ${{ secrets.DING_TOKEN }}
+          #secret: ${{ secrets.DING_SECRET }}
+          dingToken: c0ed802c77c39bf5dc03cbc9dc17912bbb6e2f76236009f431ac53ea988e2662
+          secret: SEC54542a2572f87246aad898e4f33a3174c832c393b5b199cab3ed38bfdda90f0e
           body: |
             {
               "msgtype": "markdown",
               "markdown": {
-                  "text": "## ${{ env.CI_STATUS }} to build logan-app-operator  \n Build [action:${{ matrix.TEST_SUITE }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) on ${{ env.BRANCH }} \n elapsed ${{ env.CI_ELAPSED_SECONDS }} seconds \n> ###### By ${{ github.actor }} \n",
+                  "text": "## ${{ env.CI_STATUS }} to build logan-app-operator  \n Build [action:${{ matrix.TEST_SUITE }}](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}) on ${{ github.event.pull_request.head.label }} \n elapsed ${{ env.CI_ELAPSED_SECONDS }} seconds \n> ###### By ${{ github.actor }} \n",
                   "title": "logan-app-operator github action info"
               }
             }
