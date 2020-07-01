@@ -1,14 +1,11 @@
 # Image URL to use all building/pushing image targets
 IMG ?= logancloud/logan-app-operator:latest
-
+TS ?= ""
 all: test
 
 # Run tests
 test:
 	ginkgo -r pkg/
-
-dingding:
-	bash ./scripts/dingding.sh
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: fmt vet
@@ -31,34 +28,34 @@ install:
 initwebhook: initwebhook-test initwebhook-dev initwebhook-auto
 
 initwebhook-test:
-	scripts/webhook-create-signed-cert.sh --service logan-app-webhook --namespace logan --secret logan-app-operator-webhook
-	cat deploy/webhook.yaml | scripts/webhook-patch-ca-bundle.sh | kubectl create -f -
+	hack/webhook-create-signed-cert.sh --service logan-app-webhook --namespace logan --secret logan-app-operator-webhook
+	cat deploy/webhook.yaml | hack/webhook-patch-ca-bundle.sh | kubectl create -f -
 
 addlabel:
 	kubectl label namespace logan logan-operator=true --overwrite
 
 initwebhook-dev:
-	scripts/webhook-create-signed-cert.sh --service logan-app-webhook-dev --namespace logan --secret logan-app-operator-webhook-dev
-	cat deploy/webhook-dev.yaml | scripts/webhook-patch-ca-bundle.sh | kubectl create -f -
+	hack/webhook-create-signed-cert.sh --service logan-app-webhook-dev --namespace logan --secret logan-app-operator-webhook-dev
+	cat deploy/webhook-dev.yaml | hack/webhook-patch-ca-bundle.sh | kubectl create -f -
 
 initwebhook-auto:
-	scripts/webhook-create-signed-cert.sh --service logan-app-webhook-auto --namespace logan --secret logan-app-operator-webhook-auto
-	cat deploy/webhook-auto.yaml | scripts/webhook-patch-ca-bundle.sh | kubectl create -f -
+	hack/webhook-create-signed-cert.sh --service logan-app-webhook-auto --namespace logan --secret logan-app-operator-webhook-auto
+	cat deploy/webhook-auto.yaml | hack/webhook-patch-ca-bundle.sh | kubectl create -f -
 
 # Re Install webhook into a cluster
 rewebhook:
 	kubectl delete -f deploy/webhook.yaml --ignore-not-found=true -n logan
 	kubectl delete secret logan-app-operator-webhook --ignore-not-found=true -n logan
-	scripts/webhook-create-signed-cert.sh --service logan-app-webhook --namespace logan --secret logan-app-operator-webhook
-	cat deploy/webhook.yaml | scripts/webhook-patch-ca-bundle.sh | kubectl create -f -
+	hack/webhook-create-signed-cert.sh --service logan-app-webhook --namespace logan --secret logan-app-operator-webhook
+	cat deploy/webhook.yaml | hack/webhook-patch-ca-bundle.sh | kubectl create -f -
 	kubectl delete -f deploy/webhook-dev.yaml --ignore-not-found=true -n logan
 	kubectl delete secret logan-app-operator-webhook-dev --ignore-not-found=true -n logan
-	scripts/webhook-create-signed-cert.sh --service logan-app-webhook-dev --namespace logan --secret logan-app-operator-webhook-dev
-	cat deploy/webhook-dev.yaml | scripts/webhook-patch-ca-bundle.sh | kubectl create -f -
+	hack/webhook-create-signed-cert.sh --service logan-app-webhook-dev --namespace logan --secret logan-app-operator-webhook-dev
+	cat deploy/webhook-dev.yaml | hack/webhook-patch-ca-bundle.sh | kubectl create -f -
 	kubectl delete -f deploy/webhook-auto.yaml --ignore-not-found=true -n logan
 	kubectl delete secret logan-app-operator-webhook-auto --ignore-not-found=true -n logan
-	scripts/webhook-create-signed-cert.sh --service logan-app-webhook-auto --namespace logan --secret logan-app-operator-webhook-auto
-	cat deploy/webhook-auto.yaml | scripts/webhook-patch-ca-bundle.sh | kubectl create -f -
+	hack/webhook-create-signed-cert.sh --service logan-app-webhook-auto --namespace logan --secret logan-app-operator-webhook-auto
+	cat deploy/webhook-auto.yaml | hack/webhook-patch-ca-bundle.sh | kubectl create -f -
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy:
@@ -88,27 +85,18 @@ build-tools:
 docker-build:
 	export GO111MODULE=on && operator-sdk build ${IMG}
 
-travis-docker-build:
-	bash ./scripts/travis-build.sh ${IMG}
+ci-docker-build:
+	bash ./hack/ci-build.sh ${IMG}
 
 # Push the docker image
 docker-push:
 	docker push ${IMG}
 
-travis-build:
-	bash ./scripts/travis-push-docker-image.sh
-
 e2e:
-	bash ./hack/e2e.sh
+	bash ./hack/e2e.sh ${TS}
 
 ci-push:
 	bash ./hack/docker-push.sh
-
-test-e2e:
-	bash ./scripts/travis-e2e.sh
-
-test-e2e-local: docker-build
-	bash ./scripts/travis-e2e.sh local
 
 # Init Operator
 initdeploy: addlabel initcm initrole initcrd
@@ -199,7 +187,3 @@ test-createall:
 	kubectl apply -f examples/crds/test_python.yaml -n logan
 	kubectl apply -f examples/crds/test_node.yaml -n logan
 	kubectl apply -f examples/crds/test_web.yaml -n logan
-
-#  test recreate 100 times
-test-batch:
-	scripts/all.sh

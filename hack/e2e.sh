@@ -10,7 +10,6 @@ set -x
 
 function runTest()
 {
-
     declare -A map
     map["testsuite-1"]="ginkgo --focus=\"\[Revision\]\" -skip=\"\[Slow\]|\[Serial\]\" -r test"
     map["testsuite-2"]="ginkgo --focus=\"\[CRD\]\" -skip=\"\[Slow\]|\[Serial\]\" -r test"
@@ -25,9 +24,10 @@ function runTest()
 
     res="0"
 
+    # shellcheck disable=SC2068
     for key in ${!map[@]}
     do
-      if [[ ${TEST_SUITE} == $key ]]; then
+      if [[ ${1} == $key ]]; then
         eval ${map[$key]}
         sub_res=`echo $?`
         if [ $sub_res != "0" ]; then
@@ -46,4 +46,10 @@ function runTest()
     echo "::set-env name=CI_RES::$res"
 }
 
-runTest
+TS=""
+if [[ ${1} != "" ]];then
+  TS=${1}
+  runTest "$TS"
+else
+  ginkgo -r test
+fi
